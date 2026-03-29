@@ -8,4 +8,13 @@ export default defineConfig({
     react(),
     babel({ presets: [reactCompilerPreset()] })
   ],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://edgenai-api.azure-api.net',
+        changeOrigin: true,
+        secure: true,
+      }
+    }
+  }
 })
