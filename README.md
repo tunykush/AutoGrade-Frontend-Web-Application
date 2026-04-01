@@ -14,6 +14,6 @@ pnpm dev
 bun dev
 ```
 
-npm i
-npm install react-icons --save       ( dashboard )
+npm i </br>
+npm install react-icons --save       ( dashboard )</br>
 npm install framer-motion            ( contact us )
