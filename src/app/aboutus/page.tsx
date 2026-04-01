@@ -17,8 +17,9 @@ const fadeUp = {
 };
 
 const cardHover = {
-  y: -8,
-  transition: { duration: 0.3, ease: "easeOut" },
+  y: -10,
+  scale: 1.015,
+  transition: { duration: 0.28, ease: "easeOut" },
 };
 
 export default function WhyEdGenAI() {
@@ -31,8 +32,8 @@ export default function WhyEdGenAI() {
         <div className="absolute bottom-[-100px] left-[20%] h-[260px] w-[260px] rounded-full bg-sky-200/30 blur-3xl" />
       </div>
 
+      {/* Hero */}
       <section className="mx-auto max-w-7xl px-6 py-20 md:px-10 lg:px-16 lg:py-28">
-        {/* Hero */}
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <motion.div
             initial="hidden"
@@ -46,7 +47,7 @@ export default function WhyEdGenAI() {
               About EdGenAI
             </div>
 
-            <h1 className="max-w-2xl text-4xl font-bold leading-tight text-slate-900 md:text-5xl lg:text-6xl">
+            <h1 className="max-w-2xl text-4xl font-bold leading-[1.1] tracking-[-0.02em] text-slate-900 md:text-5xl lg:text-6xl">
               Building AI for education with{" "}
               <span className="bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 bg-clip-text text-transparent">
                 clarity, trust, and real impact
@@ -130,7 +131,7 @@ export default function WhyEdGenAI() {
         </div>
       </section>
 
-      {/* About Cards */}
+      {/* Main content cards */}
       <section className="mx-auto max-w-7xl px-6 pb-20 md:px-10 lg:px-16 lg:pb-28">
         <div className="grid gap-6 lg:grid-cols-3">
           <motion.div
@@ -140,7 +141,7 @@ export default function WhyEdGenAI() {
             variants={fadeUp}
             custom={0}
             whileHover={cardHover}
-            className="rounded-[28px] border border-white/70 bg-white/80 p-8 shadow-[0_12px_40px_rgba(15,23,42,0.06)] backdrop-blur"
+            className="rounded-[28px] border border-white/70 bg-white/80 p-8 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur"
           >
             <div className="mb-5 inline-flex rounded-2xl bg-cyan-50 p-3 text-cyan-600">
               <Sparkles className="h-6 w-6" />
@@ -162,7 +163,7 @@ export default function WhyEdGenAI() {
             variants={fadeUp}
             custom={0.1}
             whileHover={cardHover}
-            className="rounded-[28px] border border-white/70 bg-white/80 p-8 shadow-[0_12px_40px_rgba(15,23,42,0.06)] backdrop-blur"
+            className="rounded-[28px] border border-white/70 bg-white/80 p-8 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur"
           >
             <div className="mb-5 inline-flex rounded-2xl bg-sky-50 p-3 text-sky-600">
               <Layers3 className="h-6 w-6" />
@@ -184,7 +185,7 @@ export default function WhyEdGenAI() {
             variants={fadeUp}
             custom={0.2}
             whileHover={cardHover}
-            className="rounded-[28px] border border-white/70 bg-white/80 p-8 shadow-[0_12px_40px_rgba(15,23,42,0.06)] backdrop-blur"
+            className="rounded-[28px] border border-white/70 bg-white/80 p-8 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur"
           >
             <div className="mb-5 inline-flex rounded-2xl bg-blue-50 p-3 text-blue-600">
               <ShieldCheck className="h-6 w-6" />
@@ -200,22 +201,118 @@ export default function WhyEdGenAI() {
         </div>
       </section>
 
-      {/* Bottom statement */}
-      <section className="mx-auto max-w-6xl px-6 pb-24 md:px-10 lg:px-16">
+      {/* Final highlight section */}
+      <section className="mx-auto max-w-7xl px-6 pb-24 md:px-10 lg:px-16">
         <motion.div
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, amount: 0.3 }}
+          viewport={{ once: true, amount: 0.2 }}
           variants={fadeUp}
           custom={0}
-          className="overflow-hidden rounded-[32px] border border-cyan-100 bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 p-[1px] shadow-[0_20px_60px_rgba(14,165,233,0.18)]"
+          className="relative overflow-hidden rounded-[36px] border border-white/60 bg-gradient-to-br from-[#0f172a] via-[#102542] to-[#0c4a6e] p-8 text-white shadow-[0_30px_100px_rgba(2,8,23,0.35)] md:p-12 lg:p-14"
         >
-          <div className="rounded-[31px] bg-white/95 px-8 py-10 text-center backdrop-blur">
-            <p className="mx-auto max-w-3xl text-xl font-medium leading-9 text-slate-700 md:text-2xl">
-              We are not building AI to replace educators. We are building AI to
-              help education become more transparent, more adaptive, and more
-              deeply human.
-            </p>
+          <div className="absolute -left-16 top-0 h-56 w-56 rounded-full bg-cyan-400/20 blur-3xl" />
+          <div className="absolute right-0 top-10 h-64 w-64 rounded-full bg-sky-400/20 blur-3xl" />
+          <div className="absolute bottom-0 left-1/3 h-48 w-48 rounded-full bg-blue-500/20 blur-3xl" />
+
+          <div className="relative z-10 grid gap-10 lg:grid-cols-[1.3fr_0.9fr] lg:items-center">
+            <div>
+              <motion.span
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+                className="mb-4 inline-flex items-center rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-cyan-100 backdrop-blur"
+              >
+                The future of education should feel human
+              </motion.span>
+
+              <motion.h2
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.75, delay: 0.1 }}
+                className="max-w-3xl text-3xl font-bold leading-tight md:text-4xl lg:text-5xl"
+              >
+                We build AI that supports educators,
+                <span className="bg-gradient-to-r from-cyan-300 via-sky-300 to-blue-200 bg-clip-text text-transparent">
+                  {" "}strengthens learning,
+                </span>
+                {" "}and keeps people at the center.
+              </motion.h2>
+
+              <motion.p
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.75, delay: 0.2 }}
+                className="mt-6 max-w-2xl text-base leading-8 text-slate-200 md:text-lg"
+              >
+                At EdGenAI, we design educational AI with transparency,
+                flexibility, and responsibility in mind. Our products are made
+                to work alongside teachers and institutions — not to replace
+                their expertise, but to make learning more adaptive,
+                meaningful, and scalable.
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.75, delay: 0.3 }}
+                className="mt-8 flex flex-wrap gap-4"
+              >
+                <button className="rounded-full bg-white px-6 py-3 font-semibold text-slate-900 transition duration-300 hover:scale-[1.03] hover:bg-cyan-50">
+                  Learn More
+                </button>
+                <button className="rounded-full border border-white/20 bg-white/10 px-6 py-3 font-semibold text-white backdrop-blur transition duration-300 hover:bg-white/15">
+                  Explore Our Approach
+                </button>
+              </motion.div>
+            </div>
+
+            <div className="relative">
+              <motion.div
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                className="rounded-[28px] border border-white/15 bg-white/10 p-6 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.18)]"
+              >
+                <p className="text-sm text-cyan-100">Built on principles</p>
+                <div className="mt-5 space-y-4">
+                  <div className="rounded-2xl bg-white/10 px-4 py-3">
+                    <p className="text-sm text-slate-300">Transparency</p>
+                    <p className="mt-1 font-semibold text-white">
+                      Clear and understandable AI outputs
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-white/10 px-4 py-3">
+                    <p className="text-sm text-slate-300">Adaptability</p>
+                    <p className="mt-1 font-semibold text-white">
+                      Flexible tools for real educational settings
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-white/10 px-4 py-3">
+                    <p className="text-sm text-slate-300">Privacy</p>
+                    <p className="mt-1 font-semibold text-white">
+                      Responsible handling of student and institutional data
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.7, delay: 0.25 }}
+                className="absolute -bottom-6 -left-4 rounded-3xl border border-cyan-300/20 bg-cyan-300/10 px-5 py-4 backdrop-blur-md shadow-lg"
+              >
+                <p className="text-sm text-cyan-100">Purpose</p>
+                <p className="font-semibold text-white">
+                  AI that enhances, not replaces
+                </p>
+              </motion.div>
+            </div>
           </div>
         </motion.div>
       </section>
