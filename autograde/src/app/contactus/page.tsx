@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 const sections = [
   { id: "contact-overview", label: "How to Contact Us" },
@@ -66,11 +67,12 @@ function InfoBox({
 }
 
 export default function ContactPage() {
+  const [isDemoOpen, setIsDemoOpen] = useState(false);
+
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#f7fbff_0%,#f3f7fb_38%,#f8fafc_100%)] px-4 py-8 md:px-6 md:py-10 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
-          {/* Left */}
           <div className="space-y-6">
             <motion.section
               initial={{ opacity: 0, y: 26 }}
@@ -293,19 +295,25 @@ export default function ContactPage() {
                 </p>
 
                 <div className="mt-8 flex flex-wrap gap-4">
-  <button className="rounded-full border border-sky-700 bg-sky-700 px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(3,105,161,0.18)] transition-all duration-300 ease-out hover:bg-white hover:text-sky-700">
-    Contact EdGenAI
-  </button>
+                  <button
+                    type="button"
+                    className="rounded-full border border-sky-700 bg-sky-700 px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(3,105,161,0.18)] transition-colors duration-300 hover:bg-white hover:text-sky-700"
+                  >
+                    Contact EdGenAI
+                  </button>
 
-  <button className="rounded-full border border-sky-700 bg-white px-6 py-3 text-sm font-semibold text-sky-700 transition-all duration-300 ease-out hover:bg-sky-700 hover:text-white">
-    Book a Demo
-  </button>
-</div>
+                  <button
+                    type="button"
+                    onClick={() => setIsDemoOpen(true)}
+                    className="rounded-full border border-sky-700 bg-white px-6 py-3 text-sm font-semibold text-sky-700 transition-colors duration-300 hover:bg-sky-700 hover:text-white"
+                  >
+                    Book a Demo
+                  </button>
+                </div>
               </div>
             </motion.section>
           </div>
 
-          {/* Right sidebar */}
           <motion.aside
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -357,6 +365,144 @@ export default function ContactPage() {
           </motion.aside>
         </div>
       </div>
+
+      <AnimatePresence>
+        {isDemoOpen && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-8 backdrop-blur-[2px]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsDemoOpen(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 24, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.98 }}
+              transition={{ duration: 0.28, ease: "easeOut" }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-2xl overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.18)]"
+            >
+              <div className="bg-[radial-gradient(circle_at_top_right,_rgba(14,165,233,0.14),_transparent_28%),linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] px-6 py-6 md:px-8">
+                <button
+                  type="button"
+                  onClick={() => setIsDemoOpen(false)}
+                  className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-lg text-slate-500 transition-colors hover:border-sky-200 hover:text-sky-700"
+                >
+                  ×
+                </button>
+
+                <p className="text-sm font-semibold uppercase tracking-[0.14em] text-sky-700">
+                  Book a demo
+                </p>
+
+                <h3 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-slate-950 md:text-4xl">
+                  Let&apos;s learn more about your needs
+                </h3>
+
+                <p className="mt-3 max-w-2xl text-[15px] leading-7 text-slate-600">
+                  Tell us a little about your organisation and what you want to
+                  explore. This helps us prepare the right conversation for your
+                  demo.
+                </p>
+              </div>
+
+              <div className="px-6 py-6 md:px-8 md:py-8">
+                <form className="space-y-5">
+                  <div className="grid gap-5 md:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-800">
+                        Full name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Enter your full name"
+                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-800">
+                        Work email
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="Enter your work email"
+                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-5 md:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-800">
+                        Organisation
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Your organisation or institution"
+                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-800">
+                        Role
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Your role"
+                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-800">
+                      What are you interested in?
+                    </label>
+                    <select className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100">
+                      <option>AutoGrade demo</option>
+                      <option>AI consultancy</option>
+                      <option>Training & professional development</option>
+                      <option>Security & governance</option>
+                      <option>Assessment design</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-800">
+                      Tell us more
+                    </label>
+                    <textarea
+                      rows={5}
+                      placeholder="Briefly describe your goals, challenges, or what you would like to see in the demo"
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 pt-2">
+                    <button
+                      type="submit"
+                      className="rounded-full border border-sky-700 bg-sky-700 px-6 py-3 text-sm font-semibold text-white transition-colors duration-300 hover:bg-white hover:text-sky-700"
+                    >
+                      Submit request
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsDemoOpen(false)}
+                      className="rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition-colors duration-300 hover:bg-slate-100"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }
