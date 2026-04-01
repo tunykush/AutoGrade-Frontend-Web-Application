@@ -16,4 +16,5 @@ bun dev
 
 npm i </br>
 npm install react-icons --save       ( dashboard )</br>
-npm install framer-motion            ( contact us )
+npm install framer-motion            ( contact us )</br>
+npm install framer-motion lucide-react
