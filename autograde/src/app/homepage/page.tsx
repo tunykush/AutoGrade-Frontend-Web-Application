@@ -1,7 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+
+import FeatureCard from '@/components/ui/FeatureCard';
+import ProgressBar from '@/components/ui/ProgressBar';
+import StatCard from '@/components/ui/StatCard';
+import SummaryItem from '@/components/ui/SummaryItem';
+
+import Step from '@/components/sections/Step';
+import Testimonial from '@/components/sections/Testimonial';
+import FAQItem from '@/components/sections/FAQItem';
 
 export default function HomePage() {
   return (
@@ -369,187 +377,6 @@ export default function HomePage() {
         <p className="opacity-80">© 2025 EdGenAI</p>
       </footer>
 
-    </div>
-  );
-}
-
-function FeatureCard({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-sm h-full flex flex-col">
-      <h3 className="font-semibold text-lg mb-4">{title}</h3>
-      <div className="flex flex-col flex-1">
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function ProgressBar({
-  label,
-  value,
-  subValue,
-  rightText,
-}: {
-  label: string;
-  value: number;     // main bar (traditional)
-  subValue?: number; // darker overlay (AI)
-  rightText?: string;
-}) {
-  return (
-    <div className="mb-5">
-
-      <div className="flex justify-between text-sm mb-1">
-        <span>{label}</span>
-        <span className="text-gray-500">{rightText}</span>
-      </div>
-
-      <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
-
-        {/* Traditional */}
-        <div
-          className="h-full bg-gray-300 rounded-full"
-          style={{ width: `${value}%` }}
-        />
-
-        {/* AutoGrade overlay */}
-        {subValue !== undefined && (
-          <div
-            className="absolute top-0 left-0 h-full bg-gray-800 rounded-full"
-            style={{ width: `${subValue}%` }}
-          />
-        )}
-      </div>
-
-    </div>
-  );
-}
-
-function Step({
-  title,
-  desc,
-}: {
-  title: string;
-  desc: string;
-}) {
-  return (
-    <div>
-      <h3 className="font-semibold text-lg mb-2">{title}</h3>
-      <p className="text-sm text-gray-600 leading-relaxed">
-        {desc}
-      </p>
-    </div>
-  );
-}
-
-function SummaryItem({
-  title,
-  desc,
-}: {
-  title: string;
-  desc: string;
-}) {
-  return (
-    <div>
-      <p className="text-3xl font-bold mb-2">{title}</p>
-      <p className="text-sm text-gray-700">{desc}</p>
-    </div>
-  );
-}
-
-function StatCard({
-  title,
-  suffix,
-  subtitle,
-  desc,
-  source,
-  highlight = false,
-}: {
-  title: string;
-  suffix?: string;
-  subtitle: string;
-  desc: string;
-  source: string;
-  highlight?: boolean;
-}) {
-  return (
-    <div
-      className={`
-        rounded-2xl p-6 shadow-sm border transition transform hover:-translate-y-1
-        ${highlight
-          ? "bg-gray-800 text-white border-gray-800"
-          : "bg-gray-100 text-gray-900 border-gray-200"}
-      `}
-    >
-      {/* TOP */}
-      <div className="flex items-baseline gap-2 mb-2">
-        <span className="text-3xl font-bold">{title}</span>
-        {suffix && (
-          <span className="text-sm font-semibold opacity-80">{suffix}</span>
-        )}
-      </div>
-
-      {/* SUBTITLE */}
-      <p className="font-semibold mb-2">{subtitle}</p>
-
-      {/* DESC */}
-      <p className="text-sm opacity-80 mb-6">{desc}</p>
-
-      {/* SOURCE */}
-      <p className="text-xs opacity-60">Source: {source}</p>
-    </div>
-  );
-}
-
-function Testimonial({ title }: { title: string }) {
-  return (
-    <div className="px-6 flex flex-col justify-center text-center md:text-left">
-
-      <p className="font-semibold mb-4">{title}</p>
-
-      <p className="text-sm italic opacity-90">
-        “AutoGrade reduced my grading time from 8 hours to under 2.”
-      </p>
-
-      <p className="text-sm mt-2 opacity-80">– John Doe</p>
-    </div>
-  );
-}
-
-function FAQItem({
-  question,
-  answer,
-}: {
-  question: string;
-  answer: string;
-}) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="bg-gray-900 text-white rounded-lg overflow-hidden">
-      
-      {/* Question */}
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex justify-between items-center p-4 text-left font-medium"
-      >
-        {question}
-        <span className="text-xl">{open ? "−" : "+"}</span>
-      </button>
-
-      {/* Answer */}
-      <div
-        className={`px-4 pb-4 text-sm text-gray-300 transition-all duration-300 ${
-          open ? "block" : "hidden"
-        }`}
-      >
-        {answer}
-      </div>
     </div>
   );
 }
