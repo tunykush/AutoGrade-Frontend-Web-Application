@@ -1,11 +1,7 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 
-export async function GET(
-  req: Request,
-  { params }: { params: Promise<{ paper_id: string }> }
-) {
-  const { paper_id } = await params
+export async function POST(req: Request) {
   const cookieStore = await cookies()
   const token =
     cookieStore.get('access_token')?.value ??
@@ -16,13 +12,17 @@ export async function GET(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const formData = await req.formData()
+
   const res = await fetch(
-    `https://edgenai-api.azure-api.net/api/v2/qh/${paper_id}/qh_api_get_master_json`,
+    'https://edgenai-api.azure-api.net/api/v2/qh/qh_api_upload_paper',
     {
+      method: 'POST',
       headers: {
         'Ocp-Apim-Subscription-Key': process.env.APIM_KEY!,
         Authorization: `Bearer ${token}`,
       },
+      body: formData,
     }
   )
 

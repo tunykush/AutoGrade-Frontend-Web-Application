@@ -21,7 +21,7 @@ export async function POST(
     {
       method: 'POST',
       headers: {
-        'Ocp-Apim-Subscription-Key': process.env.EDAI_API_KEY!,
+        'Ocp-Apim-Subscription-Key': process.env.APIM_KEY!,
         Authorization: `Bearer ${token}`,
       },
     }

@@ -23,7 +23,7 @@ export async function PUT(
     {
       method: 'PUT',
       headers: {
-        'Ocp-Apim-Subscription-Key': process.env.EDAI_API_KEY!,
+        'Ocp-Apim-Subscription-Key': process.env.APIM_KEY!,
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },

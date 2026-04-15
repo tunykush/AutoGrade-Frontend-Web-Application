@@ -20,7 +20,7 @@ export async function GET(
     `https://edgenai-api.azure-api.net/api/v2/rh/${paper_id}/rh_api_status`,
     {
       headers: {
-        'Ocp-Apim-Subscription-Key': process.env.EDAI_API_KEY!,
+        'Ocp-Apim-Subscription-Key': process.env.APIM_KEY!,
         Authorization: `Bearer ${token}`,
       },
     }
