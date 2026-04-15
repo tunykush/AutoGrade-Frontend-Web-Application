@@ -788,11 +788,17 @@ export default function RubricTestPage() {
       const paperSt = await paperStatusRes.json()
       setPaperStatus(paperSt)
 
-      if (masterRes.ok) {
-        const master: MasterJson = await masterRes.json()
-        setQuestions(flattenQuestions(master.questions ?? []))
-        if (master.exam_meta) setExamMeta(master.exam_meta)
+      const masterData = await masterRes.json().catch(() => null)
+      console.log('master-json response:', masterRes.status, masterData)
+      if (!masterRes.ok || !masterData) {
+        setLoadError(`Failed to load questions: ${masterData?.detail ?? masterData?.error ?? `HTTP ${masterRes.status}`}`)
+        setLoading(false)
+        return
       }
+      // questions may be nested under different keys
+      const rawQuestions: Question[] = masterData.questions ?? masterData.data?.questions ?? masterData.items ?? []
+      setQuestions(flattenQuestions(rawQuestions))
+      if (masterData.exam_meta) setExamMeta(masterData.exam_meta)
 
       // If questions already finalised, go straight to rubric phase
       if (paperSt.is_finalized) {
@@ -934,6 +940,10 @@ export default function RubricTestPage() {
           <span className="text-gray-300">/</span>
           <span className="font-semibold text-gray-900">{phase === 'questions' ? 'Verify Questions' : 'Rubric'}</span>
         </nav>
+
+        {loadError && (
+          <div className="rounded-xl bg-red-50 border border-red-200 px-5 py-3 text-sm text-red-700">{loadError}</div>
+        )}
 
         {/* Question verification phase */}
         {phase === 'questions' && (
