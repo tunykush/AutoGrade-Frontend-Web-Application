@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
-  const { name, password } = await req.json()
-  console.log(name, password);
+  const { username, password } = await req.json()
+  console.log(username, password);
   try {
-    const res = await fetch('https://edgenai-api.azure-api.net/api/v2/token?username=' + name + '&password=' + password, {
+    const res = await fetch('https://edgenai-api.azure-api.net/api/v2/token?username=' + username + '&password=' + password, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
-        'Ocp-Apim-Subscription-Key': process.env.EDAI_API_KEY!,
+        'Ocp-Apim-Subscription-Key': process.env.APIM_KEY!,
        },
-      
-      body: JSON.stringify({ username: name, password }),
+
+      body: JSON.stringify({ username, password }),
     })
     const data = await res.json()
     console.log('data :>> ', data);

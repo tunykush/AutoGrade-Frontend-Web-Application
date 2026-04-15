@@ -30,7 +30,7 @@ function GithubIcon() {
 
 export default function SignInPage() {
   const router = useRouter()
-  const [name, setName] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -43,7 +43,7 @@ export default function SignInPage() {
     const res = await fetch('/api/signin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, password }),
+      body: JSON.stringify({ username, password }),
     })
 
     const data = await res.json()
@@ -75,11 +75,11 @@ export default function SignInPage() {
 
       <form onSubmit={handleSubmit}>
         <AuthInput
-          label="Name"
+          label="Username"
           type="text"
-          placeholder="Enter your name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          placeholder="Enter your username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
         />
 
         <AuthInput
