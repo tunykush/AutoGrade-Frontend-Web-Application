@@ -789,6 +789,9 @@ export default function RubricTestPage() {
         fetch(`/api/paper/${pid}/master-json`, { headers: authHeaders }),
       ])
 
+      // Always leave setup phase so errors are visible (not hidden behind the modal)
+      setPhase('questions')
+
       if (!paperStatusRes.ok) {
         const err = await paperStatusRes.json().catch(() => ({}))
         setLoadError(err.detail ?? err.error ?? `Error ${paperStatusRes.status}`)
@@ -802,7 +805,7 @@ export default function RubricTestPage() {
       const masterData = await masterRes.json().catch(() => null)
       setDebugMasterJson({ status: masterRes.status, body: masterData })
       if (!masterRes.ok || !masterData) {
-        setLoadError(`Failed to load questions: ${masterData?.detail ?? masterData?.error ?? `HTTP ${masterRes.status}`}`)
+        setLoadError(`Failed to load questions (HTTP ${masterRes.status}): ${masterData?.detail ?? masterData?.error ?? masterData?.message ?? 'no body'}`)
         setLoading(false)
         return
       }
@@ -820,9 +823,8 @@ export default function RubricTestPage() {
         } else {
           setPhase('rubric')
         }
-      } else {
-        setPhase('questions')
       }
+      // else stay on 'questions' phase (already set above)
     } catch {
       setLoadError('Network error — check the dev server is running')
     } finally {
@@ -957,7 +959,7 @@ export default function RubricTestPage() {
           <div className="rounded-xl bg-red-50 border border-red-200 px-5 py-3 text-sm text-red-700">{loadError}</div>
         )}
 
-        {debugMasterJson && questions.length === 0 && phase === 'questions' && (
+        {debugMasterJson && (phase === 'questions' || !!loadError) && (
           <div className="rounded-xl bg-yellow-50 border border-yellow-200 px-5 py-3 text-xs font-mono text-yellow-900 whitespace-pre-wrap break-all">
             <p className="font-bold mb-1 text-yellow-700">Debug — master-json response (paste this to fix):</p>
             {JSON.stringify(debugMasterJson, null, 2)}
