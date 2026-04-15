@@ -13,7 +13,7 @@ export async function GET(req: Request) {
   }
 
   const res = await fetch(
-    'https://edgenai-api.azure-api.net/api/v2/qh/qh_api_list_papers',
+    'https://edgenai-api.azure-api.net/api/v2/qh/list_papers',
     {
       headers: {
         'Ocp-Apim-Subscription-Key': process.env.APIM_KEY!,
