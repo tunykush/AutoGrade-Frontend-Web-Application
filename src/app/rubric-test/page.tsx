@@ -690,6 +690,7 @@ export default function RubricTestPage() {
   const [examMeta, setExamMeta] = useState<{ name: string; code: string; total_marks: number } | null>(null)
 
   const [paperStatus, setPaperStatus] = useState<Record<string, unknown> | null>(null)
+  const [debugMasterJson, setDebugMasterJson] = useState<unknown>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [savingCid, setSavingCid] = useState<string | null>(null)
@@ -789,7 +790,7 @@ export default function RubricTestPage() {
       setPaperStatus(paperSt)
 
       const masterData = await masterRes.json().catch(() => null)
-      console.log('master-json response:', masterRes.status, masterData)
+      setDebugMasterJson({ status: masterRes.status, body: masterData })
       if (!masterRes.ok || !masterData) {
         setLoadError(`Failed to load questions: ${masterData?.detail ?? masterData?.error ?? `HTTP ${masterRes.status}`}`)
         setLoading(false)
@@ -943,6 +944,13 @@ export default function RubricTestPage() {
 
         {loadError && (
           <div className="rounded-xl bg-red-50 border border-red-200 px-5 py-3 text-sm text-red-700">{loadError}</div>
+        )}
+
+        {debugMasterJson && questions.length === 0 && phase === 'questions' && (
+          <div className="rounded-xl bg-yellow-50 border border-yellow-200 px-5 py-3 text-xs font-mono text-yellow-900 whitespace-pre-wrap break-all">
+            <p className="font-bold mb-1 text-yellow-700">Debug — master-json response (paste this to fix):</p>
+            {JSON.stringify(debugMasterJson, null, 2)}
+          </div>
         )}
 
         {/* Question verification phase */}
