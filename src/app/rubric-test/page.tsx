@@ -349,7 +349,7 @@ function SetupModal({
   token: string
   onPaperId: (v: string) => void
   onToken: (v: string) => void
-  onLoad: () => void
+  onLoad: (pid: string) => void
   onClose: () => void
   loading: boolean
 }) {
@@ -402,7 +402,7 @@ function SetupModal({
       }
       onPaperId(String(pid))
       setUploadStatus(ready ? `Ready — loading…` : `Processing — loading…`)
-      onLoad()
+      onLoad(String(pid))
     } catch {
       setUploadError('Upload failed')
       setUploadStatus(null)
@@ -768,15 +768,16 @@ export default function RubricTestPage() {
     setPhase('rubric')
   }, [startPolling, startPaperStatusPolling, token]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const loadPaper = useCallback(async () => {
-    if (!paperId.trim()) return
+  const loadPaper = useCallback(async (pidOverride?: string) => {
+    const pid = pidOverride ?? paperId
+    if (!pid.trim()) return
     setLoading(true)
     setLoadError(null)
 
     try {
       const [paperStatusRes, masterRes] = await Promise.all([
-        fetch(`/api/paper/${paperId}/status`, { headers: authHeaders }),
-        fetch(`/api/paper/${paperId}/master-json`, { headers: authHeaders }),
+        fetch(`/api/paper/${pid}/status`, { headers: authHeaders }),
+        fetch(`/api/paper/${pid}/master-json`, { headers: authHeaders }),
       ])
 
       if (!paperStatusRes.ok) {
@@ -803,10 +804,10 @@ export default function RubricTestPage() {
 
       // If questions already finalised, go straight to rubric phase
       if (paperSt.is_finalized) {
-        const rubricStatusRes = await fetch(`/api/rubric/${paperId}/status`, { headers: authHeaders })
+        const rubricStatusRes = await fetch(`/api/rubric/${pid}/status`, { headers: authHeaders })
         if (rubricStatusRes.ok) {
           const rs: RubricStatus = await rubricStatusRes.json()
-          startRubricPhase(paperId, rs)
+          startRubricPhase(pid, rs)
         } else {
           setPhase('rubric')
         }
