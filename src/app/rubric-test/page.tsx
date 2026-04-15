@@ -375,7 +375,7 @@ function SetupModal({
       })
       const data = await res.json()
       if (!res.ok) {
-        setUploadError(data.detail ?? data.error ?? `Error ${res.status}`)
+        setUploadError(data.detail ?? data.error ?? data.message ?? `Error ${res.status}`)
         setUploadStatus(null)
         return
       }
@@ -387,12 +387,21 @@ function SetupModal({
       }
       setUploadStatus('Processing…')
       let ready = false
-      for (let i = 0; i < 20; i++) {
-        await new Promise((r) => setTimeout(r, 10000))
+      let interval = 12000
+      const deadline = Date.now() + 5 * 60 * 1000 // 5 minute max
+      while (Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, interval))
         const statusRes = await fetch(`/api/paper/${pid}/status`, { headers: authHeader })
+        if (statusRes.status === 429) {
+          interval = Math.min(interval * 2, 60000)
+          setUploadStatus(`Rate limited — retrying in ${Math.round(interval / 1000)}s…`)
+          continue
+        }
         if (!statusRes.ok) continue
+        interval = 12000 // reset backoff on success
         const s = await statusRes.json()
         const vs: string = s.validation_status ?? s.status ?? s.paper_status ?? ''
+        setUploadStatus(`Processing… (${vs || 'checking'})`)
         if (['SUCCESS', 'READY'].includes(vs)) { ready = true; break }
         if (['FAILED', 'ERROR'].includes(vs)) {
           setUploadError(`Paper processing failed: ${s.message ?? vs}`)
@@ -401,7 +410,7 @@ function SetupModal({
         }
       }
       onPaperId(String(pid))
-      setUploadStatus(ready ? `Ready — loading…` : `Processing — loading…`)
+      setUploadStatus(ready ? `Ready — loading…` : `Timed out — loading anyway…`)
       onLoad(String(pid))
     } catch {
       setUploadError('Upload failed')
