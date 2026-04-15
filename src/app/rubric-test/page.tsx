@@ -837,12 +837,16 @@ export default function RubricTestPage() {
 
       // If questions already finalised, go straight to rubric phase
       if (paperSt.is_finalized) {
-        const rubricStatusRes = await fetch(`/api/rubric/${pid}/status`, { headers: authHeaders })
+        const rubricStatusRes = await fetchWithRetry(`/api/rubric/${pid}/status`, { headers: authHeaders })
         if (rubricStatusRes.ok) {
           const rs: RubricStatus = await rubricStatusRes.json()
           startRubricPhase(pid, rs)
         } else {
+          // Rubric status fetch failed — try to create rubric anyway and start polling
           setPhase('rubric')
+          fetch(`/api/rubric/${pid}/create`, { method: 'POST', headers: authHeaders })
+            .then(() => startPolling(pid))
+            .catch(() => null)
         }
       }
       // else stay on 'questions' phase (already set above)
@@ -1112,7 +1116,7 @@ export default function RubricTestPage() {
 
           {questions.length === 0 ? (
             <div className="px-5 py-12 text-center text-sm text-gray-400">
-              {isGenerating ? 'Generating rubric…' : 'No questions found for this paper'}
+              {isGenerating ? 'Generating rubric…' : 'No questions loaded — go back to Setup and upload a paper'}
             </div>
           ) : (
             questions.map((q) => (
