@@ -552,12 +552,14 @@ export default function RubricTestPage() {
   const [rubricStatus, setRubricStatus] = useState<RubricStatus | null>(null)
   const [examMeta, setExamMeta] = useState<{ name: string; code: string; total_marks: number } | null>(null)
 
+  const [paperStatus, setPaperStatus] = useState<Record<string, unknown> | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [savingCid, setSavingCid] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const paperPollRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const authHeaders: Record<string, string> = token ? { 'X-Auth-Token': token } : {}
 
@@ -588,7 +590,25 @@ export default function RubricTestPage() {
     poll()
   }, [fetchStatus])
 
-  useEffect(() => () => { if (pollRef.current) clearTimeout(pollRef.current) }, [])
+  useEffect(() => () => {
+    if (pollRef.current) clearTimeout(pollRef.current)
+    if (paperPollRef.current) clearTimeout(paperPollRef.current)
+  }, [])
+
+  const startPaperStatusPolling = useCallback((pid: string) => {
+    if (paperPollRef.current) clearTimeout(paperPollRef.current)
+    const poll = async () => {
+      const res = await fetch(`/api/paper/${pid}/status`, { headers: authHeaders })
+      if (!res.ok) return
+      const s = await res.json()
+      setPaperStatus(s)
+      const st: string = s.status ?? s.paper_status ?? ''
+      if (st && !['READY', 'FINALIZED', 'FAILED'].includes(st)) {
+        paperPollRef.current = setTimeout(poll, 3000)
+      }
+    }
+    poll()
+  }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadPaper = useCallback(async () => {
     if (!paperId.trim()) return
@@ -621,6 +641,7 @@ export default function RubricTestPage() {
         if (master.exam_meta) setExamMeta(master.exam_meta)
       }
 
+      startPaperStatusPolling(paperId)
       setShowSetup(false)
     } catch {
       setLoadError('Network error — check the dev server is running')
@@ -771,6 +792,34 @@ export default function RubricTestPage() {
             </button>
           </div>
         </div>
+
+        {/* Paper status banner */}
+        {connected && paperStatus && (() => {
+          const st: string = (paperStatus.status ?? paperStatus.paper_status ?? '') as string
+          if (!st || st === 'READY' || st === 'FINALIZED') return null
+          const isProcessing = !['FAILED', 'READY', 'FINALIZED'].includes(st)
+          return (
+            <div className={`flex items-center gap-3 rounded-xl border px-5 py-3 ${
+              st === 'FAILED'
+                ? 'bg-red-50 border-red-200'
+                : 'bg-blue-50 border-blue-200'
+            }`}>
+              {isProcessing && (
+                <svg className="w-4 h-4 text-blue-500 shrink-0 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              )}
+              <div>
+                <p className={`text-sm font-medium ${st === 'FAILED' ? 'text-red-800' : 'text-blue-800'}`}>
+                  Paper processing: <span className="font-semibold">{st}</span>
+                </p>
+                {paperStatus.message && (
+                  <p className="text-xs text-blue-600 mt-0.5">{paperStatus.message as string}</p>
+                )}
+              </div>
+            </div>
+          )
+        })()}
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">

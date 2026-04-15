@@ -17,7 +17,7 @@ export async function GET(
   }
 
   const res = await fetch(
-    `https://edgenai-api.azure-api.net/api/v2/qh/${paper_id}/qh_api_paper_status`,
+    `https://edgenai-api.azure-api.net/api/v2/qh/${paper_id}/status`,
     {
       headers: {
         'Ocp-Apim-Subscription-Key': process.env.APIM_KEY!,
