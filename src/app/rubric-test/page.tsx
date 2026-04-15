@@ -357,23 +357,19 @@ function LoginModal({
 // ─── Setup modal ──────────────────────────────────────────────────────────────
 
 function SetupModal({
-  paperId,
   token,
   onPaperId,
-  onToken,
   onLoad,
   onClose,
-  loading,
 }: {
-  paperId: string
   token: string
   onPaperId: (v: string) => void
-  onToken: (v: string) => void
   onLoad: (pid: string) => void
   onClose: () => void
-  loading: boolean
 }) {
+  const [tab, setTab] = useState<'upload' | 'id'>('upload')
   const [file, setFile] = useState<File | null>(null)
+  const [manualId, setManualId] = useState('')
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [uploadStatus, setUploadStatus] = useState<string | null>(null)
@@ -408,7 +404,7 @@ function SetupModal({
       setUploadStatus('Processing…')
       let ready = false
       let interval = 12000
-      const deadline = Date.now() + 5 * 60 * 1000 // 5 minute max
+      const deadline = Date.now() + 5 * 60 * 1000
       while (Date.now() < deadline) {
         await new Promise((r) => setTimeout(r, interval))
         const statusRes = await fetch(`/api/paper/${pid}/status`, { headers: authHeader })
@@ -418,7 +414,7 @@ function SetupModal({
           continue
         }
         if (!statusRes.ok) continue
-        interval = 12000 // reset backoff on success
+        interval = 12000
         const s = await statusRes.json()
         const vs: string = s.validation_status ?? s.status ?? s.paper_status ?? ''
         setUploadStatus(`Processing… (${vs || 'checking'})`)
@@ -440,38 +436,86 @@ function SetupModal({
     }
   }
 
+  const handleLoadById = () => {
+    const pid = manualId.trim()
+    if (!pid) return
+    onPaperId(pid)
+    onLoad(pid)
+  }
+
+  const tabBtn = (t: 'upload' | 'id', label: string) => (
+    <button
+      onClick={() => setTab(t)}
+      className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
+        tab === t ? 'bg-violet-600 text-white' : 'text-gray-500 hover:text-gray-900'
+      }`}
+    >
+      {label}
+    </button>
+  )
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 space-y-5">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-gray-900">Upload a paper</h2>
+          <h2 className="text-base font-semibold text-gray-900">Load a paper</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
 
-        <div
-          className="rounded-lg border-2 border-dashed border-gray-200 px-4 py-10 text-center cursor-pointer hover:border-violet-400 transition-colors"
-          onClick={() => document.getElementById('pdf-upload')?.click()}
-        >
-          <svg className="w-8 h-8 mx-auto text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-          </svg>
-          <p className="text-sm text-gray-500">{file ? file.name : 'Click to select a PDF'}</p>
-          <input id="pdf-upload" type="file" accept=".pdf" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+        {/* Tabs */}
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+          {tabBtn('upload', 'Upload PDF')}
+          {tabBtn('id', 'Enter Paper ID')}
         </div>
 
-        {uploadError && <p className="text-xs text-red-600">{uploadError}</p>}
-        {uploadStatus && <p className="text-xs text-violet-600">{uploadStatus}</p>}
+        {tab === 'upload' && (
+          <>
+            <div
+              className="rounded-lg border-2 border-dashed border-gray-200 px-4 py-10 text-center cursor-pointer hover:border-violet-400 transition-colors"
+              onClick={() => document.getElementById('pdf-upload')?.click()}
+            >
+              <svg className="w-8 h-8 mx-auto text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              </svg>
+              <p className="text-sm text-gray-500">{file ? file.name : 'Click to select a PDF'}</p>
+              <input id="pdf-upload" type="file" accept=".pdf" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+            </div>
+            {uploadError && <p className="text-xs text-red-600">{uploadError}</p>}
+            {uploadStatus && <p className="text-xs text-violet-600">{uploadStatus}</p>}
+            <button
+              onClick={handleUpload}
+              disabled={!file || uploading}
+              className="w-full rounded-lg bg-violet-600 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-40 transition-colors"
+            >
+              {uploading ? uploadStatus ?? 'Uploading…' : 'Upload & load'}
+            </button>
+          </>
+        )}
 
-        <button
-          onClick={handleUpload}
-          disabled={!file || uploading}
-          className="w-full rounded-lg bg-violet-600 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-40 transition-colors"
-        >
-          {uploading ? uploadStatus ?? 'Uploading…' : 'Upload & load'}
-        </button>
-
+        {tab === 'id' && (
+          <>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">Paper ID</label>
+              <input
+                type="number"
+                value={manualId}
+                onChange={(e) => setManualId(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleLoadById()}
+                placeholder="e.g. 51"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              />
+            </div>
+            <button
+              onClick={handleLoadById}
+              disabled={!manualId.trim()}
+              className="w-full rounded-lg bg-violet-600 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-40 transition-colors"
+            >
+              Load paper
+            </button>
+          </>
+        )}
       </div>
     </div>
   )
@@ -750,7 +794,9 @@ export default function RubricTestPage() {
       if (s.progress?.by_qnode && Object.keys(s.progress.by_qnode).length > 0) {
         setRubrics(rubricFromByQnode(s.progress.by_qnode))
       }
-      if (ACTIVE_STATUSES.has(s.rubric_status)) {
+      // Stop polling when terminal or all questions are done
+      const allDone = s.progress?.total > 0 && s.progress.done >= s.progress.total
+      if (ACTIVE_STATUSES.has(s.rubric_status) && !allDone) {
         pollRef.current = setTimeout(() => poll(interval), interval)
       }
     }
@@ -943,7 +989,8 @@ export default function RubricTestPage() {
   const connected = !!token
   const status = rubricStatus?.rubric_status ?? null
   const isFinalized = status === 'FINALIZED'
-  const isGenerating = status ? ACTIVE_STATUSES.has(status) : false
+  const allRubricsDone = (rubricStatus?.progress?.total ?? 0) > 0 && (rubricStatus?.progress?.done ?? 0) >= (rubricStatus?.progress?.total ?? 1)
+  const isGenerating = status ? (ACTIVE_STATUSES.has(status) && !allRubricsDone) : false
   const approvedCount = questions.filter((q) => rubrics[q.canonical_question_id]?.approved_by_user).length
 
   return (
@@ -952,13 +999,10 @@ export default function RubricTestPage() {
 
       {phase === 'setup' && (
         <SetupModal
-          paperId={paperId}
           token={token}
           onPaperId={setPaperId}
-          onToken={setToken}
           onLoad={loadPaper}
           onClose={() => { if (phase !== 'setup') setPhase('questions') }}
-          loading={loading}
         />
       )}
 
