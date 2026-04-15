@@ -14,13 +14,19 @@ export async function POST(req: Request) {
       body: JSON.stringify({ username, password }),
     })
     const data = await res.json()
-    console.log('data :>> ', data);
-    if (!data.access) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+    console.log('signin response status:', res.status, 'body:', JSON.stringify(data))
+
+    if (!res.ok) {
+      return NextResponse.json({ error: 'Invalid credentials', detail: data }, { status: 401 })
     }
 
-    const response = NextResponse.json({ access_token: data.access })
-    response.cookies.set('access_token', data.access, {
+    const accessToken = data.access ?? data.access_token ?? data.token
+    if (!accessToken) {
+      return NextResponse.json({ error: 'No token in response', detail: data }, { status: 401 })
+    }
+
+    const response = NextResponse.json({ access_token: accessToken })
+    response.cookies.set('access_token', accessToken, {
       httpOnly: true,
       sameSite: 'lax',
       path: '/',
