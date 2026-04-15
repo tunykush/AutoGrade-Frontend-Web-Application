@@ -72,7 +72,7 @@ function rubricFromByQnode(by_qnode: Record<string, unknown>): RubricMap {
 }
 
 const ACTIVE_STATUSES = new Set(['PENDING', 'GENERATING', 'IN_PROGRESS', 'RUNNING', 'QUEUED'])
-const TERMINAL_STATUSES = new Set(['READY', 'FINALIZED', 'FAILED', 'TIMEOUT'])
+const TERMINAL_STATUSES = new Set(['FINALIZED', 'FAILED', 'TIMEOUT'])
 
 // ─── Nav ──────────────────────────────────────────────────────────────────────
 
@@ -853,7 +853,7 @@ export default function RubricTestPage() {
                 isFinalized ? 'text-violet-600' :
                 isGenerating ? 'text-blue-500' : 'text-green-600'
               }`}>
-                {!connected ? 'Not connected' : isFinalized ? 'Finalized' : isGenerating ? 'Generating…' : 'Ready'}
+                {!connected ? 'Not connected' : isFinalized ? 'Finalized' : isGenerating ? 'Generating…' : status === 'READY' ? 'Starting…' : 'Ready'}
               </span>
               {isGenerating && rubricStatus && (
                 <span className="text-gray-400">
