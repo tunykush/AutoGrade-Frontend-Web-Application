@@ -22,8 +22,10 @@ interface RubricMap {
 interface Question {
   canonical_question_id: string
   display_label: string
-  question_text: string
+  question_text?: string
+  question_content?: { text?: string }
   max_marks: number
+  is_gradeable?: boolean
   parts?: Question[]
 }
 
@@ -45,12 +47,20 @@ interface MasterJson {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+function questionText(q: Question): string {
+  return q.question_content?.text ?? q.question_text ?? ''
+}
+
 function flattenQuestions(questions: Question[]): Question[] {
   const out: Question[] = []
   const walk = (qs: Question[]) => {
     for (const q of qs) {
-      out.push(q)
-      if (q.parts?.length) walk(q.parts)
+      if (!q.canonical_question_id) continue // skip malformed entries
+      if (q.parts?.length) {
+        walk(q.parts) // recurse into parts; only leaf parts are gradeable
+      } else {
+        out.push(q) // leaf question — always include
+      }
     }
   }
   walk(questions)
@@ -192,7 +202,7 @@ function QuestionVerificationView({
               <span className="inline-flex items-center justify-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">
                 {q.display_label}
               </span>
-              <p className="text-sm text-gray-800 truncate">{q.question_text || '—'}</p>
+              <p className="text-sm text-gray-800 truncate">{questionText(q) || '—'}</p>
               <p className="text-sm text-gray-500">{q.max_marks} marks</p>
               <div className="flex justify-end">
                 {isVerified ? (
@@ -568,7 +578,7 @@ function QuestionRubricRow({ question, rubric, isFinalized, isSaving, onChange }
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-gray-800 truncate">{question.question_text}</p>
+          <p className="text-sm text-gray-800 truncate">{questionText(question)}</p>
           <p className="text-xs text-gray-400 mt-0.5">{question.max_marks} marks</p>
         </div>
 
@@ -970,7 +980,7 @@ export default function RubricTestPage() {
           <div className="rounded-xl bg-red-50 border border-red-200 px-5 py-3 text-sm text-red-700">{loadError}</div>
         )}
 
-        {debugMasterJson && (phase === 'questions' || !!loadError) && (
+        {debugMasterJson && !!loadError && (
           <div className="rounded-xl bg-yellow-50 border border-yellow-200 px-5 py-3 text-xs font-mono text-yellow-900 whitespace-pre-wrap break-all">
             <p className="font-bold mb-1 text-yellow-700">Debug — master-json response (paste this to fix):</p>
             {JSON.stringify(debugMasterJson, null, 2)}
