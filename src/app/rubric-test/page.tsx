@@ -74,6 +74,151 @@ function rubricFromByQnode(by_qnode: Record<string, unknown>): RubricMap {
 const ACTIVE_STATUSES = new Set(['PENDING', 'GENERATING', 'IN_PROGRESS', 'RUNNING', 'QUEUED'])
 const TERMINAL_STATUSES = new Set(['FINALIZED', 'FAILED', 'TIMEOUT'])
 
+// ─── Question verification view ───────────────────────────────────────────────
+
+function QuestionVerificationView({
+  questions,
+  examMeta,
+  paperId,
+  authHeaders,
+  onFinalized,
+}: {
+  questions: Question[]
+  examMeta: { name: string; code: string; total_marks: number } | null
+  paperId: string
+  authHeaders: Record<string, string>
+  onFinalized: () => void
+}) {
+  const [verified, setVerified] = useState<Set<string>>(new Set())
+  const [finalising, setFinalising] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const toggle = (id: string) =>
+    setVerified(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+
+  const verifyAll = () => setVerified(new Set(questions.map(q => q.canonical_question_id)))
+  const clearAll = () => setVerified(new Set())
+
+  const pct = questions.length ? Math.round((verified.size / questions.length) * 100) : 0
+
+  const handleFinalise = async () => {
+    setFinalising(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/paper/${paperId}/finalize`, {
+        method: 'POST',
+        headers: authHeaders,
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(data.detail ?? data.error ?? `Error ${res.status}`)
+        return
+      }
+      onFinalized()
+    } catch {
+      setError('Finalise failed')
+    } finally {
+      setFinalising(false)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Verify Questions</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            {examMeta
+              ? `${examMeta.name} · ${examMeta.code} · ${examMeta.total_marks} marks`
+              : 'Review the auto-extracted questions before generating the rubric'}
+          </p>
+        </div>
+        <button
+          onClick={handleFinalise}
+          disabled={finalising || questions.length === 0}
+          className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-40 transition-colors shadow-sm"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          {finalising ? 'Finalising…' : 'Finalise & generate rubric'}
+        </button>
+      </div>
+
+      {/* Progress */}
+      <div className="bg-white rounded-xl border border-gray-200 px-5 py-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-gray-700">{verified.size} of {questions.length} questions verified</span>
+          <span className="text-2xl font-bold text-violet-600">{pct}%</span>
+        </div>
+        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div
+            className="h-2 bg-violet-600 rounded-full transition-all duration-300"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <div className="flex gap-2">
+          <button onClick={verifyAll} className="text-xs text-violet-600 hover:text-violet-700 font-medium">Verify all</button>
+          <span className="text-gray-300">·</span>
+          <button onClick={clearAll} className="text-xs text-gray-400 hover:text-gray-600 font-medium">Clear all</button>
+        </div>
+      </div>
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      {/* Question list */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="grid grid-cols-[2.5rem_1fr_5rem_5rem] gap-4 px-5 py-2.5 border-b border-gray-100 bg-gray-50">
+          <span />
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Question</span>
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Marks</span>
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide text-right">Verified</span>
+        </div>
+        {questions.map((q) => {
+          const isVerified = verified.has(q.canonical_question_id)
+          return (
+            <div
+              key={q.canonical_question_id}
+              onClick={() => toggle(q.canonical_question_id)}
+              className={`grid grid-cols-[2.5rem_1fr_5rem_5rem] gap-4 items-center px-5 py-4 border-b border-gray-100 last:border-0 cursor-pointer transition-colors ${
+                isVerified ? 'bg-violet-50/50' : 'hover:bg-gray-50'
+              }`}
+            >
+              <span className="inline-flex items-center justify-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">
+                {q.display_label}
+              </span>
+              <p className="text-sm text-gray-800 truncate">{q.question_text || '—'}</p>
+              <p className="text-sm text-gray-500">{q.max_marks} marks</p>
+              <div className="flex justify-end">
+                {isVerified ? (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-violet-600">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Done
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-400">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <circle cx="12" cy="12" r="9" />
+                    </svg>
+                    Pending
+                  </span>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ─── Nav ──────────────────────────────────────────────────────────────────────
 
 function Nav({ onSetup }: { onSetup: () => void }) {
@@ -531,7 +676,7 @@ function QuestionRubricRow({ question, rubric, isFinalized, isSaving, onChange }
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function RubricTestPage() {
-  const [showSetup, setShowSetup] = useState(true)
+  const [phase, setPhase] = useState<'setup' | 'questions' | 'rubric'>('setup')
   const [paperId, setPaperId] = useState('')
   const [token, setToken] = useState('')
 
@@ -606,37 +751,42 @@ export default function RubricTestPage() {
     poll()
   }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const startRubricPhase = useCallback((pid: string, status: RubricStatus) => {
+    setRubricStatus(status)
+    if (status.progress?.by_qnode && Object.keys(status.progress.by_qnode).length > 0) {
+      setRubrics(rubricFromByQnode(status.progress.by_qnode))
+    }
+    if (ACTIVE_STATUSES.has(status.rubric_status)) {
+      startPolling(pid)
+    } else if (!TERMINAL_STATUSES.has(status.rubric_status)) {
+      fetch(`/api/rubric/${pid}/create`, { method: 'POST', headers: authHeaders })
+        .then(() => startPolling(pid))
+        .catch(() => null)
+    }
+    startPaperStatusPolling(pid)
+    setPhase('rubric')
+  }, [startPolling, startPaperStatusPolling, token]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const loadPaper = useCallback(async () => {
     if (!paperId.trim()) return
     setLoading(true)
     setLoadError(null)
 
     try {
-      const [statusRes, masterRes] = await Promise.all([
-        fetch(`/api/rubric/${paperId}/status`, { headers: authHeaders }),
+      const [paperStatusRes, masterRes] = await Promise.all([
+        fetch(`/api/paper/${paperId}/status`, { headers: authHeaders }),
         fetch(`/api/paper/${paperId}/master-json`, { headers: authHeaders }),
       ])
 
-      if (!statusRes.ok) {
-        const err = await statusRes.json().catch(() => ({}))
-        setLoadError(err.detail ?? err.error ?? `Error ${statusRes.status}`)
+      if (!paperStatusRes.ok) {
+        const err = await paperStatusRes.json().catch(() => ({}))
+        setLoadError(err.detail ?? err.error ?? `Error ${paperStatusRes.status}`)
         setLoading(false)
         return
       }
 
-      const status: RubricStatus = await statusRes.json()
-      setRubricStatus(status)
-      if (status.progress?.by_qnode && Object.keys(status.progress.by_qnode).length > 0) {
-        setRubrics(rubricFromByQnode(status.progress.by_qnode))
-      }
-      if (ACTIVE_STATUSES.has(status.rubric_status)) {
-        startPolling(paperId)
-      } else if (!TERMINAL_STATUSES.has(status.rubric_status)) {
-        // No rubric started yet — kick it off automatically
-        fetch(`/api/rubric/${paperId}/create`, { method: 'POST', headers: authHeaders })
-          .then(() => startPolling(paperId))
-          .catch(() => null)
-      }
+      const paperSt = await paperStatusRes.json()
+      setPaperStatus(paperSt)
 
       if (masterRes.ok) {
         const master: MasterJson = await masterRes.json()
@@ -644,12 +794,36 @@ export default function RubricTestPage() {
         if (master.exam_meta) setExamMeta(master.exam_meta)
       }
 
-      startPaperStatusPolling(paperId)
-      setShowSetup(false)
+      // If questions already finalised, go straight to rubric phase
+      if (paperSt.is_finalized) {
+        const rubricStatusRes = await fetch(`/api/rubric/${paperId}/status`, { headers: authHeaders })
+        if (rubricStatusRes.ok) {
+          const rs: RubricStatus = await rubricStatusRes.json()
+          startRubricPhase(paperId, rs)
+        } else {
+          setPhase('rubric')
+        }
+      } else {
+        setPhase('questions')
+      }
     } catch {
       setLoadError('Network error — check the dev server is running')
     } finally {
       setLoading(false)
+    }
+  }, [paperId, token]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleQuestionsFinalized = useCallback(async () => {
+    const rubricStatusRes = await fetch(`/api/rubric/${paperId}/status`, { headers: authHeaders })
+    if (rubricStatusRes.ok) {
+      const rs: RubricStatus = await rubricStatusRes.json()
+      startRubricPhase(paperId, rs)
+    } else {
+      // Kick off rubric generation anyway
+      fetch(`/api/rubric/${paperId}/create`, { method: 'POST', headers: authHeaders })
+        .then(() => startPolling(paperId))
+        .catch(() => null)
+      setPhase('rubric')
     }
   }, [paperId, token]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -723,20 +897,19 @@ export default function RubricTestPage() {
   const isFinalized = status === 'FINALIZED'
   const isGenerating = status ? ACTIVE_STATUSES.has(status) : false
   const approvedCount = questions.filter((q) => rubrics[q.canonical_question_id]?.approved_by_user).length
-  const connected = !showSetup && !!rubricStatus
 
   return (
     <div className="min-h-screen bg-[#f2f2f0]">
-      <Nav onSetup={() => setShowSetup(true)} />
+      <Nav onSetup={() => setPhase('setup')} />
 
-      {showSetup && (
+      {phase === 'setup' && (
         <SetupModal
           paperId={paperId}
           token={token}
           onPaperId={setPaperId}
           onToken={setToken}
           onLoad={loadPaper}
-          onClose={() => { if (connected) setShowSetup(false) }}
+          onClose={() => { if (phase !== 'setup') setPhase('questions') }}
           loading={loading}
         />
       )}
@@ -757,10 +930,24 @@ export default function RubricTestPage() {
             Papers
           </Link>
           <span className="text-gray-300">/</span>
-          <span>{connected ? `Paper #${rubricStatus!.paper_id}` : 'Paper'}</span>
+          <span>{paperId ? `Paper #${paperId}` : 'Paper'}</span>
           <span className="text-gray-300">/</span>
-          <span className="font-semibold text-gray-900">Rubric</span>
+          <span className="font-semibold text-gray-900">{phase === 'questions' ? 'Verify Questions' : 'Rubric'}</span>
         </nav>
+
+        {/* Question verification phase */}
+        {phase === 'questions' && (
+          <QuestionVerificationView
+            questions={questions}
+            examMeta={examMeta}
+            paperId={paperId}
+            authHeaders={authHeaders}
+            onFinalized={handleQuestionsFinalized}
+          />
+        )}
+
+        {/* Rubric phase */}
+        {phase === 'rubric' && (<>
 
         {/* Heading */}
         <div className="flex items-start justify-between">
@@ -853,7 +1040,7 @@ export default function RubricTestPage() {
                 isFinalized ? 'text-violet-600' :
                 isGenerating ? 'text-blue-500' : 'text-green-600'
               }`}>
-                {!connected ? 'Not connected' : isFinalized ? 'Finalized' : isGenerating ? 'Generating…' : status === 'READY' ? 'Starting…' : 'Ready'}
+                {isFinalized ? 'Finalized' : isGenerating ? 'Generating…' : status === 'READY' ? 'Starting…' : 'Ready'}
               </span>
               {isGenerating && rubricStatus && (
                 <span className="text-gray-400">
@@ -871,11 +1058,7 @@ export default function RubricTestPage() {
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide text-right">Actions</span>
           </div>
 
-          {!connected ? (
-            <div className="px-5 py-12 text-center text-sm text-gray-400">
-              Click <button onClick={() => setShowSetup(true)} className="text-violet-600 font-medium hover:underline">Setup</button> to connect a paper
-            </div>
-          ) : questions.length === 0 ? (
+          {questions.length === 0 ? (
             <div className="px-5 py-12 text-center text-sm text-gray-400">
               {isGenerating ? 'Generating rubric…' : 'No questions found for this paper'}
             </div>
@@ -893,12 +1076,14 @@ export default function RubricTestPage() {
           )}
         </div>
 
-        {connected && !isFinalized && questions.length > 0 && (
+        {!isFinalized && questions.length > 0 && (
           <p className="text-xs text-center text-gray-400">
             {approvedCount} of {questions.length} questions approved
             {approvedCount === questions.length && ' — ready to finalize'}
           </p>
         )}
+
+        </>)}
       </div>
     </div>
   )
