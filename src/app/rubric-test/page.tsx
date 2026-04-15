@@ -242,21 +242,21 @@ function SetupModal({
       }
       setUploadStatus('Processing…')
       let ready = false
-      for (let i = 0; i < 30; i++) {
-        await new Promise((r) => setTimeout(r, 2000))
+      for (let i = 0; i < 20; i++) {
+        await new Promise((r) => setTimeout(r, 10000))
         const statusRes = await fetch(`/api/paper/${pid}/status`, { headers: authHeader })
-        if (statusRes.ok) {
-          const s = await statusRes.json()
-          if (s.status === 'READY' || s.paper_status === 'READY') { ready = true; break }
-          if (s.status === 'FAILED' || s.paper_status === 'FAILED') {
-            setUploadError('Paper processing failed')
-            setUploadStatus(null)
-            return
-          }
+        if (!statusRes.ok) continue
+        const s = await statusRes.json()
+        if (s.status === 'READY' || s.paper_status === 'READY') { ready = true; break }
+        if (s.status === 'FAILED' || s.paper_status === 'FAILED') {
+          setUploadError('Paper processing failed')
+          setUploadStatus(null)
+          return
         }
       }
       onPaperId(String(pid))
-      setUploadStatus(ready ? `Ready — Paper ID ${pid}` : `Paper ID ${pid} (still processing)`)
+      setUploadStatus(ready ? `Ready — loading…` : `Processing — loading…`)
+      onLoad()
     } catch {
       setUploadError('Upload failed')
       setUploadStatus(null)
@@ -297,15 +297,6 @@ function SetupModal({
           {uploading ? uploadStatus ?? 'Uploading…' : 'Upload & load'}
         </button>
 
-        {paperId && !uploading && (
-          <button
-            onClick={onLoad}
-            disabled={loading}
-            className="w-full rounded-lg border border-violet-300 py-2.5 text-sm font-semibold text-violet-700 hover:bg-violet-50 disabled:opacity-40 transition-colors"
-          >
-            {loading ? 'Loading…' : `Load paper #${paperId}`}
-          </button>
-        )}
       </div>
     </div>
   )
@@ -637,7 +628,14 @@ export default function RubricTestPage() {
       if (status.progress?.by_qnode && Object.keys(status.progress.by_qnode).length > 0) {
         setRubrics(rubricFromByQnode(status.progress.by_qnode))
       }
-      if (ACTIVE_STATUSES.has(status.rubric_status)) startPolling(paperId)
+      if (ACTIVE_STATUSES.has(status.rubric_status)) {
+        startPolling(paperId)
+      } else if (!TERMINAL_STATUSES.has(status.rubric_status)) {
+        // No rubric started yet — kick it off automatically
+        fetch(`/api/rubric/${paperId}/create`, { method: 'POST', headers: authHeaders })
+          .then(() => startPolling(paperId))
+          .catch(() => null)
+      }
 
       if (masterRes.ok) {
         const master: MasterJson = await masterRes.json()
