@@ -247,9 +247,10 @@ function SetupModal({
         const statusRes = await fetch(`/api/paper/${pid}/status`, { headers: authHeader })
         if (!statusRes.ok) continue
         const s = await statusRes.json()
-        if (s.status === 'READY' || s.paper_status === 'READY') { ready = true; break }
-        if (s.status === 'FAILED' || s.paper_status === 'FAILED') {
-          setUploadError('Paper processing failed')
+        const vs: string = s.validation_status ?? s.status ?? s.paper_status ?? ''
+        if (['SUCCESS', 'READY'].includes(vs)) { ready = true; break }
+        if (['FAILED', 'ERROR'].includes(vs)) {
+          setUploadError(`Paper processing failed: ${s.message ?? vs}`)
           setUploadStatus(null)
           return
         }
@@ -597,8 +598,8 @@ export default function RubricTestPage() {
       if (!res.ok) return
       const s = await res.json()
       setPaperStatus(s)
-      const st: string = s.status ?? s.paper_status ?? ''
-      if (st && !['READY', 'FINALIZED', 'FAILED'].includes(st)) {
+      const st: string = s.validation_status ?? s.status ?? s.paper_status ?? ''
+      if (st && !['SUCCESS', 'READY', 'FINALIZED', 'FAILED', 'ERROR'].includes(st)) {
         paperPollRef.current = setTimeout(() => poll(interval), interval)
       }
     }
@@ -797,9 +798,9 @@ export default function RubricTestPage() {
 
         {/* Paper status banner */}
         {connected && paperStatus && (() => {
-          const st: string = (paperStatus.status ?? paperStatus.paper_status ?? '') as string
-          if (!st || st === 'READY' || st === 'FINALIZED') return null
-          const isProcessing = !['FAILED', 'READY', 'FINALIZED'].includes(st)
+          const st: string = (paperStatus.validation_status ?? paperStatus.status ?? paperStatus.paper_status ?? '') as string
+          if (!st || ['SUCCESS', 'READY', 'FINALIZED'].includes(st)) return null
+          const isProcessing = !['FAILED', 'ERROR', 'SUCCESS', 'READY', 'FINALIZED'].includes(st)
           return (
             <div className={`flex items-center gap-3 rounded-xl border px-5 py-3 ${
               st === 'FAILED'
