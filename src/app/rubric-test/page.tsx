@@ -81,7 +81,7 @@ function rubricFromByQnode(by_qnode: Record<string, unknown>): RubricMap {
   return map
 }
 
-const ACTIVE_STATUSES = new Set(['PENDING', 'GENERATING', 'IN_PROGRESS', 'RUNNING', 'QUEUED'])
+const ACTIVE_STATUSES = new Set(['PENDING', 'GENERATING', 'IN_PROGRESS', 'RUNNING', 'QUEUED', 'READY'])
 const TERMINAL_STATUSES = new Set(['FINALIZED', 'FAILED', 'TIMEOUT'])
 
 // ─── Question verification view ───────────────────────────────────────────────
@@ -92,14 +92,18 @@ function QuestionVerificationView({
   paperId,
   authHeaders,
   onFinalized,
+  alreadyFinalized,
 }: {
   questions: Question[]
   examMeta: { name: string; code: string; total_marks: number } | null
   paperId: string
   authHeaders: Record<string, string>
   onFinalized: () => void
+  alreadyFinalized?: boolean
 }) {
-  const [verified, setVerified] = useState<Set<string>>(new Set())
+  const [verified, setVerified] = useState<Set<string>>(
+    () => alreadyFinalized ? new Set(questions.map(q => q.canonical_question_id)) : new Set()
+  )
   const [finalising, setFinalising] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -138,6 +142,12 @@ function QuestionVerificationView({
 
   return (
     <div className="space-y-6">
+      {alreadyFinalized && (
+        <div className="flex items-center gap-3 rounded-xl bg-blue-50 border border-blue-200 px-5 py-3">
+          <svg className="w-4 h-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <p className="text-sm text-blue-800">These questions were previously finalised. Review them and click <strong>Finalise &amp; generate rubric</strong> to regenerate the rubric.</p>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -780,8 +790,14 @@ export default function RubricTestPage() {
       startPolling(pid)
     } else if (!TERMINAL_STATUSES.has(status.rubric_status)) {
       fetch(`/api/rubric/${pid}/create`, { method: 'POST', headers: authHeaders })
-        .then(() => startPolling(pid))
-        .catch(() => null)
+        .then(async (r) => {
+          if (!r.ok) {
+            const d = await r.json().catch(() => ({}))
+            showToast(d.detail ?? d.error ?? d.message ?? `Rubric create failed (${r.status})`, 'error')
+          }
+          startPolling(pid)
+        })
+        .catch(() => showToast('Rubric create request failed', 'error'))
     }
     startPaperStatusPolling(pid)
     setPhase('rubric')
@@ -835,21 +851,8 @@ export default function RubricTestPage() {
       setQuestions(flattenQuestions(rawQuestions))
       if (masterData.exam_meta) setExamMeta(masterData.exam_meta)
 
-      // If questions already finalised, go straight to rubric phase
-      if (paperSt.is_finalized) {
-        const rubricStatusRes = await fetchWithRetry(`/api/rubric/${pid}/status`, { headers: authHeaders })
-        if (rubricStatusRes.ok) {
-          const rs: RubricStatus = await rubricStatusRes.json()
-          startRubricPhase(pid, rs)
-        } else {
-          // Rubric status fetch failed — try to create rubric anyway and start polling
-          setPhase('rubric')
-          fetch(`/api/rubric/${pid}/create`, { method: 'POST', headers: authHeaders })
-            .then(() => startPolling(pid))
-            .catch(() => null)
-        }
-      }
-      // else stay on 'questions' phase (already set above)
+      // Always show questions verification first — user must click
+      // "Finalise & generate rubric" to proceed to the rubric phase
     } catch {
       setLoadError('Network error — check the dev server is running')
     } finally {
@@ -999,6 +1002,7 @@ export default function RubricTestPage() {
             paperId={paperId}
             authHeaders={authHeaders}
             onFinalized={handleQuestionsFinalized}
+            alreadyFinalized={!!(paperStatus as Record<string, unknown>)?.is_finalized}
           />
         )}
 
