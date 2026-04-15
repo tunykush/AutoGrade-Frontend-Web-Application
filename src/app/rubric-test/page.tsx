@@ -901,6 +901,7 @@ export default function RubricTestPage() {
     }
   }
 
+  const connected = !!token
   const status = rubricStatus?.rubric_status ?? null
   const isFinalized = status === 'FINALIZED'
   const isGenerating = status ? ACTIVE_STATUSES.has(status) : false
