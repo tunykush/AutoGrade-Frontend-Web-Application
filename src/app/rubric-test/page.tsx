@@ -576,7 +576,7 @@ export default function RubricTestPage() {
 
   const startPolling = useCallback((pid: string) => {
     if (pollRef.current) clearTimeout(pollRef.current)
-    const poll = async () => {
+    const poll = async (interval = 10000) => {
       const s = await fetchStatus(pid)
       if (!s) return
       setRubricStatus(s)
@@ -584,7 +584,7 @@ export default function RubricTestPage() {
         setRubrics(rubricFromByQnode(s.progress.by_qnode))
       }
       if (ACTIVE_STATUSES.has(s.rubric_status)) {
-        pollRef.current = setTimeout(poll, 3000)
+        pollRef.current = setTimeout(() => poll(interval), interval)
       }
     }
     poll()
@@ -597,14 +597,18 @@ export default function RubricTestPage() {
 
   const startPaperStatusPolling = useCallback((pid: string) => {
     if (paperPollRef.current) clearTimeout(paperPollRef.current)
-    const poll = async () => {
+    const poll = async (interval = 10000) => {
       const res = await fetch(`/api/paper/${pid}/status`, { headers: authHeaders })
+      if (res.status === 429) {
+        paperPollRef.current = setTimeout(() => poll(Math.min(interval * 2, 60000)), interval * 2)
+        return
+      }
       if (!res.ok) return
       const s = await res.json()
       setPaperStatus(s)
       const st: string = s.status ?? s.paper_status ?? ''
       if (st && !['READY', 'FINALIZED', 'FAILED'].includes(st)) {
-        paperPollRef.current = setTimeout(poll, 3000)
+        paperPollRef.current = setTimeout(() => poll(interval), interval)
       }
     }
     poll()
