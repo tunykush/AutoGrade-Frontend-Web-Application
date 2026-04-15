@@ -782,15 +782,25 @@ export default function RubricTestPage() {
     if (!pid.trim()) return
     setLoading(true)
     setLoadError(null)
+    // Always leave setup phase immediately so errors are visible
+    setPhase('questions')
+
+    // Fetch with automatic 429 retry + backoff
+    const fetchWithRetry = async (url: string, opts: RequestInit, maxWaitMs = 120000): Promise<Response> => {
+      let wait = 5000
+      const deadline = Date.now() + maxWaitMs
+      while (true) {
+        const res = await fetch(url, opts)
+        if (res.status !== 429 || Date.now() + wait > deadline) return res
+        await new Promise(r => setTimeout(r, wait))
+        wait = Math.min(wait * 2, 30000)
+      }
+    }
 
     try {
-      const [paperStatusRes, masterRes] = await Promise.all([
-        fetch(`/api/paper/${pid}/status`, { headers: authHeaders }),
-        fetch(`/api/paper/${pid}/master-json`, { headers: authHeaders }),
-      ])
-
-      // Always leave setup phase so errors are visible (not hidden behind the modal)
-      setPhase('questions')
+      // Fetch paper status first, then master-json sequentially to avoid
+      // hitting rate limits from firing both simultaneously
+      const paperStatusRes = await fetchWithRetry(`/api/paper/${pid}/status`, { headers: authHeaders })
 
       if (!paperStatusRes.ok) {
         const err = await paperStatusRes.json().catch(() => ({}))
@@ -802,6 +812,7 @@ export default function RubricTestPage() {
       const paperSt = await paperStatusRes.json()
       setPaperStatus(paperSt)
 
+      const masterRes = await fetchWithRetry(`/api/paper/${pid}/master-json`, { headers: authHeaders })
       const masterData = await masterRes.json().catch(() => null)
       setDebugMasterJson({ status: masterRes.status, body: masterData })
       if (!masterRes.ok || !masterData) {
