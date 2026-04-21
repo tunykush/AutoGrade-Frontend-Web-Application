@@ -1,10 +1,10 @@
 'use client';
  
 import { useState, useRef, useEffect, useCallback } from 'react';
-import {FileText, Upload, RefreshCw, Settings2, ChevronRight, Trash2, CheckCircle2, Clock, AlertCircle, X, Loader2,} from 'lucide-react';
- 
+import { FileText, Upload, RefreshCw, Settings2, ChevronRight, Trash2, CheckCircle2, Clock, AlertCircle, X, Loader2 } from 'lucide-react';
+
 type PaperItem = {
-    id: number | string;
+    id: number | string;       
     name: string;
     createdAt?: string;
     validationStatus?: string;
@@ -12,6 +12,7 @@ type PaperItem = {
     message?: string;
 };
  
+// ────────────────────── Qh paper statuses to display states ──────────────────────
 function normaliseStatus(raw?: string): string {
     if (!raw) return 'PENDING';
     const s = raw.toUpperCase();
@@ -30,8 +31,8 @@ const STATUS_STYLES: Record<string, string> = {
     ERROR:   'bg-red-100 text-red-700',
 };
  
-// ───────────────────────── localStorage --> source of truth for the paper list ─────────────────────────
-const LS_KEY = 'edgenai_papers_v2';
+// ────────────────────── localStorage, because API does not return the original filename at all ──────────────────────
+const LS_KEY = 'edgenai_papers_v3';
  
 function loadLocalPapers(): PaperItem[] {
     try { return JSON.parse(localStorage.getItem(LS_KEY) ?? '[]'); }
@@ -66,9 +67,11 @@ export default function MyPapersPage() {
     const [uploading, setUploading]     = useState(false);
     const [syncing, setSyncing]         = useState(false);
     const [listError, setListError]     = useState('');
+    const [deleteTarget, setDeleteTarget] = useState<PaperItem | null>(null);
+    const [deleting, setDeleting]         = useState(false);
+    const [deleteError, setDeleteError]   = useState('');
     const inputRef = useRef<HTMLInputElement>(null);
  
-    // ───────────────────────── update state &  persist localStorage ─────────────────────────
     function updatePapers(updater: (prev: PaperItem[]) => PaperItem[]) {
         setPapers((prev) => {
             const next = updater(prev);
@@ -77,19 +80,20 @@ export default function MyPapersPage() {
         });
     }
  
+    // ────────────────────── load local cache and then sync from API after short delay ──────────────────────
     useEffect(() => {
         const saved = loadLocalPapers();
         setPapers(saved);
-        const t = setTimeout(() => syncStatuses(saved), 2000);
+        const t = setTimeout(() => syncPapers(saved), 2000);
         return () => clearTimeout(t);
     }, []);
  
-    // ───────────────────────── sync and update statuses ─────────────────────────
-    const syncStatuses = useCallback(async (currentPapers?: PaperItem[]) => {
+    // ────────────────────── sync the paper list from Qh List Papers ──────────────────────
+    const syncPapers = useCallback(async (currentPapers?: PaperItem[]) => {
         setSyncing(true);
         setListError('');
         try {
-            const res = await fetch('/api/submissions', { cache: 'no-store' });
+            const res = await fetch('/api/papers', { cache: 'no-store' });
             const data = await res.json();
  
             if (!res.ok) {
@@ -103,16 +107,15 @@ export default function MyPapersPage() {
  
             if (!Array.isArray(data)) return;
  
-            // ───────────────────────── status map from API: id --> status ─────────────────────────
             const statusMap: Record<string, string> = {};
-            for (const s of data) {
-                statusMap[String(s.submission_id)] = normaliseStatus(s.validation_status);
+            for (const p of data) {
+                statusMap[String(p.paper_id ?? p.id)] = normaliseStatus(p.validation_status ?? p.status);
             }
  
             updatePapers((prev) =>
                 prev.map((p) => {
                     const apiStatus = statusMap[String(p.id)];
-                    if (!apiStatus) return p; 
+                    if (!apiStatus) return p;
                     return { ...p, validationStatus: apiStatus };
                 })
             );
@@ -123,28 +126,25 @@ export default function MyPapersPage() {
         }
     }, []);
  
-    // ───────────────────────── refresh button ─────────────────────────
-    const handleRefresh = useCallback(() => {
-        syncStatuses();
-    }, [syncStatuses]);
+    const handleRefresh = useCallback(() => syncPapers(), [syncPapers]);
  
-    // ───────────────────────── checking the API every few secs to see if the grading finished or not ──────────────────────
-    async function pollStatus(submissionId: string | number) {
+    // ────────────────────── Poll a single submission's status until terminal ──────────────────────
+    async function pollPaperStatus(paperId: string | number) {
         await sleep(15_000);
         const MAX_ATTEMPTS = 30;
         let interval = 10_000;
  
         for (let i = 0; i < MAX_ATTEMPTS; i++) {
             try {
-                const res  = await fetch(`/api/status?submissionId=${submissionId}`, { cache: 'no-store' });
+                const res  = await fetch(`/api/status?paperId=${paperId}`, { cache: 'no-store' });
                 const data = await res.json();
  
                 if (res.status === 429) { await sleep(15_000); continue; }
  
-                const status = normaliseStatus(data?.validation_status);
+                const status = normaliseStatus(data?.validation_status ?? data?.status);
  
                 updatePapers((prev) =>
-                    prev.map((p) => p.id === submissionId ? { ...p, validationStatus: status } : p)
+                    prev.map((p) => p.id === paperId ? { ...p, validationStatus: status } : p)
                 );
  
                 if (TERMINAL.has(status)) break;
@@ -156,18 +156,17 @@ export default function MyPapersPage() {
         }
     }
  
-    // ───────────────────────── File staging ─────────────────────────
+    // ────────────────────── File staging ──────────────────────
     function handleFilesSelected(files: FileList | null) {
         if (!files?.length) return;
         const incoming = Array.from(files);
  
-        // files that are already in the uploaded papers list cannot be uploaded again
         const uploadedNames = new Set(papers.map((p) => p.name.toLowerCase()));
         const duplicates = incoming.filter((f) => uploadedNames.has(f.name.toLowerCase()));
+ 
         if (duplicates.length > 0) {
             const names = duplicates.map((f) => `"${f.name}"`).join(', ');
             alert(`${names} ${duplicates.length > 1 ? 'have' : 'has'} already been uploaded.`);
-            
             const valid = incoming.filter((f) => !uploadedNames.has(f.name.toLowerCase()));
             if (!valid.length) return;
             setStagedFiles((prev) => {
@@ -194,18 +193,17 @@ export default function MyPapersPage() {
         handleFilesSelected(e.dataTransfer.files);
     }
  
-    // ───────────────────────── Submit staged files ─────────────────────────
+    // ────────────────────── Submit staged files ──────────────────────
     async function handleSubmit() {
         if (!stagedFiles.length || uploading) return;
         setUploading(true);
  
         for (const file of stagedFiles) {
             const tempId = `temp_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
- 
-            // ───────────────────────── placeholder ─────────────────────────
+
             updatePapers((prev) => [{
                 id:               tempId,
-                name:             file.name,   
+                name:             file.name,
                 validationStatus: 'PENDING',
                 createdAt:        new Date().toISOString(),
                 totalMarks:       0,
@@ -221,13 +219,12 @@ export default function MyPapersPage() {
                 if (!uploadRes.ok) {
                     throw new Error(uploadData?.detail?.raw || uploadData?.error || 'Upload failed');
                 }
+
+                const paperId = uploadData?.paper_id ?? uploadData?.id ?? null;
  
-                const submissionId = uploadData?.submission_id ?? uploadData?.Assignment_id;
- 
-                // if API return ID that already exists in our list --> don't add a duplicate
                 updatePapers((prev) => {
-                    const idAlreadyExists = submissionId && prev.some(
-                        (p) => String(p.id) === String(submissionId) && p.id !== tempId
+                    const idAlreadyExists = paperId && prev.some(
+                        (p) => String(p.id) === String(paperId) && p.id !== tempId
                     );
                     if (idAlreadyExists) {
                         return prev.filter((p) => p.id !== tempId);
@@ -236,7 +233,7 @@ export default function MyPapersPage() {
                         p.id === tempId
                             ? {
                                 ...p,
-                                id:               submissionId ?? tempId,
+                                id:               paperId ?? tempId,
                                 name:             file.name,
                                 validationStatus: 'RUNNING',
                                 message:          undefined,
@@ -244,8 +241,9 @@ export default function MyPapersPage() {
                             : p
                     );
                 });
+
+                if (paperId) pollPaperStatus(paperId);
  
-                if (submissionId) pollStatus(submissionId);
             } catch (err) {
                 const message = err instanceof Error ? err.message : 'Something went wrong';
                 updatePapers((prev) =>
@@ -263,16 +261,50 @@ export default function MyPapersPage() {
         setUploading(false);
     }
  
-    // ───────────────────────── if delete paper --> removes from local state and localStorage ─────────────────────────
-    function handleDelete(id: number | string) {
-        updatePapers((prev) => prev.filter((p) => p.id !== id));
+    // ────────────────────── delete paper ──────────────────────
+    function confirmDelete(paper: PaperItem) {
+        setDeleteTarget(paper);
+        setDeleteError('');
+    }
+ 
+    async function executeDelete() {
+        if (!deleteTarget || deleting) return;
+        setDeleting(true);
+        setDeleteError('');
+
+        if (String(deleteTarget.id).startsWith('temp_')) {
+            updatePapers((prev) => prev.filter((p) => p.id !== deleteTarget.id));
+            setDeleteTarget(null);
+            setDeleting(false);
+            return;
+        }
+ 
+        try {
+            const res = await fetch(`/api/delete-paper?paperId=${encodeURIComponent(deleteTarget.id)}`, {
+                method: 'DELETE',
+            });
+ 
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                setDeleteError(data?.error ?? `Delete failed (${res.status})`);
+                return;
+            }
+ 
+            // ────────────────────── remove from local state as well ──────────────────────
+            updatePapers((prev) => prev.filter((p) => p.id !== deleteTarget.id));
+            setDeleteTarget(null);
+        } catch {
+            setDeleteError('Could not reach the server. Please try again.');
+        } finally {
+            setDeleting(false);
+        }
     }
  
     const readyCount = papers.filter((p) => p.validationStatus === 'READY').length;
  
     return (
         <>
-            {/* ───────────────────────── Page Header ───────────────────────── */}
+            {/* ────────────────────── Page Header ────────────────────── */}
             <header className="border-b border-black/10 bg-[#f5f5f3]">
                 <div className="mx-auto flex h-[56px] items-center justify-between px-6">
                     <span className="text-base font-semibold text-[#111111]">EdgenAI</span>
@@ -286,25 +318,21 @@ export default function MyPapersPage() {
             </header>
  
             <main className="min-h-screen bg-gray-100">
-                
-                {/* ───────────────────────── Upload Container ───────────────────────── */}
                 <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8 space-y-4">
-                    
+ 
                     <header>
                         <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">My Papers</h1>
-                        <p className="mt-0.5 text-sm text-gray-500">Upload exam papers and we'll grade them automatically.</p>
+                        <p className="mt-0.5 text-sm text-gray-500">Upload exam papers and we'll extract and process them automatically.</p>
                     </header>
  
-                    {/* ───────────────────────── Upload Area ───────────────────────── */}
+                    {/* ────────────────────── Upload Area ────────────────────── */}
                     <section
                         className={`relative rounded-xl border-2 border-dashed bg-white overflow-hidden transition-colors ${
                             dragOver ? 'border-gray-900 bg-gray-100' : 'border-gray-300 hover:border-gray-400'
                         }`}
                         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                         onDragLeave={(e) => {
-                            if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                                setDragOver(false);
-                            }
+                            if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOver(false);
                         }}
                         onDrop={handleDrop}
                     >
@@ -369,7 +397,7 @@ export default function MyPapersPage() {
                         )}
                     </section>
  
-                    {/* ───────────────────────── Papers List (after uploaded) ───────────────────────── */}
+                    {/* ────────────────────── Papers List ────────────────────── */}
                     <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
                         <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 sm:px-5">
                             <div>
@@ -392,13 +420,12 @@ export default function MyPapersPage() {
                             </button>
                         </div>
  
-                        {/* ───────────────────────── Papers Rows ───────────────────────── */}
                         {listError && (
                             <p className="px-5 py-2 text-xs text-amber-600 bg-amber-50 border-b border-amber-100">
                                 {listError}
                             </p>
                         )}
-                        
+ 
                         <ul role="list" className="divide-y divide-gray-100">
                             {papers.length === 0 ? (
                                 <li className="px-5 py-10 text-center text-sm text-gray-400">
@@ -406,7 +433,6 @@ export default function MyPapersPage() {
                                 </li>
                             ) : (
                                 papers.map((paper) => (
-                                    /* ───────────────────────── Papers Info ───────────────────────── */
                                     <li key={paper.id}>
                                         <article aria-label={`Paper: ${paper.name}`} className="flex items-center gap-3 px-4 py-3 sm:px-5">
                                             <FileText className="hidden h-8 w-8 shrink-0 text-gray-300 sm:block" strokeWidth={1.5} />
@@ -418,6 +444,10 @@ export default function MyPapersPage() {
                                                             {new Date(paper.createdAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
                                                         </time>
                                                     )}
+
+                                                    {!String(paper.id).startsWith('temp_') && (
+                                                        <span className="font-mono text-gray-300">#{paper.id}</span>
+                                                    )}
                                                     {(paper.totalMarks ?? 0) > 0 && <span>{paper.totalMarks} marks</span>}
                                                     {paper.message && (
                                                         <span className={paper.validationStatus === 'ERROR' ? 'text-red-400' : 'text-gray-400'}>
@@ -428,15 +458,25 @@ export default function MyPapersPage() {
                                             </div>
                                             <div className="flex shrink-0 items-center gap-2">
                                                 <StatusBadge status={paper.validationStatus ?? 'PENDING'} />
-                                                <button aria-label={`Set up rubric for ${paper.name}`} className="hidden items-center gap-1 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 sm:flex">
+
+                                                <button
+                                                    aria-label={`Set up rubric for ${paper.name}`}
+                                                    disabled={paper.validationStatus !== 'READY'}
+                                                    className="hidden items-center gap-1 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed sm:flex"
+                                                >
                                                     <Settings2 className="h-3.5 w-3.5" />
                                                     Setup
                                                 </button>
-                                                <button aria-label={`Grade submissions for ${paper.name}`} className="flex items-center gap-1 rounded-md bg-gray-900 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-gray-700">
+                                                {/* ────────────────────── grade button to navigate to Grading page with paper_id ────────────────────── */}
+                                                <button
+                                                    aria-label={`Grade submissions for ${paper.name}`}
+                                                    disabled={paper.validationStatus !== 'READY'}
+                                                    className="flex items-center gap-1 rounded-md bg-gray-900 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                                                >
                                                     <span className="hidden sm:inline">Grade</span>
                                                     <ChevronRight className="h-3.5 w-3.5" />
                                                 </button>
-                                                <button onClick={() => handleDelete(paper.id)} aria-label={`Delete ${paper.name}`} className="rounded-md p-1.5 text-gray-300 hover:bg-red-50 hover:text-red-500">
+                                                <button onClick={() => confirmDelete(paper)} aria-label={`Delete ${paper.name}`} className="rounded-md p-1.5 text-gray-300 hover:bg-red-50 hover:text-red-500">
                                                     <Trash2 className="h-3.5 w-3.5" />
                                                 </button>
                                             </div>
@@ -448,6 +488,47 @@ export default function MyPapersPage() {
                     </section>
                 </div>
             </main>
+ 
+            {/* ────────────────────── Delete Confirmation Modal ────────────────────── */}
+            {deleteTarget && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+                    <div className="w-full max-w-sm rounded-xl bg-white shadow-xl">
+                        <div className="px-6 pt-6 pb-4">
+                            <div className="flex items-start gap-3">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-100">
+                                    <Trash2 className="h-4 w-4 text-red-600" />
+                                </div>
+                                <div className="min-w-0">
+                                    <h2 id="delete-modal-title" className="text-sm font-semibold text-gray-900">Delete paper?</h2>
+                                    <p className="mt-1 text-sm text-gray-500">
+                                        <span className="font-medium text-gray-800 break-all">{deleteTarget.name}</span> will be permanently deleted and cannot be recovered.
+                                    </p>
+                                    {deleteError && (
+                                        <p className="mt-2 text-xs text-red-500">{deleteError}</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex gap-2 border-t border-gray-100 px-6 py-4">
+                            <button
+                                onClick={() => { setDeleteTarget(null); setDeleteError(''); }}
+                                disabled={deleting}
+                                className="flex-1 rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={executeDelete}
+                                disabled={deleting}
+                                className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                                {deleting ? 'Deleting…' : 'Delete'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }
