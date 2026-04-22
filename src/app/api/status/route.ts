@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
             headers: {
                 Authorization: `Bearer ${token}`,
                 Accept: 'application/json',
-                'Ocp-Apim-Subscription-Key': process.env.EDGEN_SUBSCRIPTION_KEY ?? '',
+                'Ocp-Apim-Subscription-Key': process.env.EDAI_API_KEY ?? '',
             },
             cache: 'no-store',
         });
