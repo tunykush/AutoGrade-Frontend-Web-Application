@@ -29,12 +29,12 @@ export default function PapersPage() {
       try {
         const res = await fetch('/api/papers')
         const data = await res.json()
-    if (res.ok && Array.isArray(data)) {
-        setPapers(data)
-        setIsDemo(false)
+        if (res.ok && Array.isArray(data) && data.length > 0) {
+          setPapers(data)
+          setIsDemo(false)
         } else {
-        setPapers(DEMO_PAPERS)
-        setIsDemo(true)
+          setPapers(DEMO_PAPERS)
+          setIsDemo(true)
         }
       } catch {
         setPapers(DEMO_PAPERS)
