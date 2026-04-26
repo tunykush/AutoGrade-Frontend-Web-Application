@@ -14,10 +14,19 @@ export async function GET(req: NextRequest) {
   }
   if (token) headers['Authorization'] = `Bearer ${token}`
 
-  const res = await fetch(
-    `https://edgenai-api.azure-api.net/api/v2/ag/paper/${submissionId}/ag_api_get_grading_json`,
-    { headers }
-  )
-  const data = await res.json()
-  return NextResponse.json(data, { status: res.status })
+  try {
+    const res = await fetch(
+      `https://edgenai-api.azure-api.net/api/v2/ag/paper/${submissionId}/ag_api_get_grading_json`,
+      { headers, cache: 'no-store' }
+    )
+    const text = await res.text()
+    try {
+      const data = JSON.parse(text)
+      return NextResponse.json(data, { status: res.status })
+    } catch {
+      return NextResponse.json({ error: text }, { status: res.status })
+    }
+  } catch (e) {
+    return NextResponse.json({ error: String(e) }, { status: 500 })
+  }
 }
