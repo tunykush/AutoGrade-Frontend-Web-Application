@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     const token = cookieStore.get("access_token")?.value;
 
     if (!token) {
-      return NextResponse.json({ error: "Missing token" }, { status: 400 });
+      return NextResponse.json({ error: "Missing token" }, { status: 401 });
     }
 
     const formData = new FormData();
