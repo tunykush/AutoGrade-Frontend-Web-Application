@@ -14,37 +14,18 @@ export async function GET(request: NextRequest) {
   const token = cookieStore.get('access_token')?.value;
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // Try multiple candidate endpoint names
-  const candidates = [
-    'sh_api_get_sample_answer',
-    'sh_api_get',
-    'sh_api_status',
-    'status',
-  ];
-
-  let res: Response | null = null;
-  let usedEndpoint = '';
-  for (const fn of candidates) {
-    const r = await fetchRetry(
-      `${BASE}/sh/${paperId}/${fn}?token=${encodeURIComponent(token)}`,
-      {
-        headers: {
-          'Ocp-Apim-Subscription-Key': process.env.EDAI_API_KEY ?? '',
-          Accept: 'application/json',
-        },
-        cache: 'no-store',
+  const res = await fetchRetry(
+    `${BASE}/sh/${paperId}/status?token=${encodeURIComponent(token)}`,
+    {
+      headers: {
+        'Ocp-Apim-Subscription-Key': process.env.EDAI_API_KEY ?? '',
+        Accept: 'application/json',
       },
-      1,
-      false,
-    );
-    if (r.status !== 404) { res = r; usedEndpoint = fn; break; }
-  }
-
-  if (!res) {
-    return NextResponse.json({ error: 'No sample answer found' }, { status: 404 });
-  }
+      cache: 'no-store',
+    },
+  );
 
   const data = await res.json().catch(() => null);
-  console.log(`[sh/get] endpoint=${usedEndpoint} paper_id=${paperId} status=${res.status}`, JSON.stringify(data));
+  console.log(`[sh/get] paper_id=${paperId} status=${res.status}`, JSON.stringify(data));
   return NextResponse.json(data ?? {}, { status: res.ok ? 200 : res.status });
 }
