@@ -15,7 +15,7 @@ export default function FAQItem({
     <div className="bg-gray-900 text-white rounded-lg overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex justify-between items-center p-4 text-left font-medium"
+        className="w-full flex justify-between items-center p-4 text-left font-medium cursor-pointer"
       >
         {question}
         <span className="text-xl">{open ? "−" : "+"}</span>

@@ -148,24 +148,24 @@ export default function HomePage() {
                 <Image
                   src="/logos/EdGenAI_Logo.png"
                   alt="EdGenAI"
-                  width={50}
-                  height={50}
+                  width={60}
+                  height={60}
                   style={{ filter: 'brightness(0) invert(0)', color: '#23334A' }}
                 />
               </Link>
-              <span className="font-bold text-base">EdGenAI</span>
+              {/* <span className="font-bold text-base">EdGenAI</span> */}
             </div>
 
             <nav className="hidden md:flex gap-2">
-              <Link href="#" className="px-4 py-2 text-base font-medium text-gray-700 hover:bg-white rounded-full transition">AutoGrade</Link>
-              <Link href="#" className="px-4 py-2 text-base font-medium text-gray-700 hover:bg-white rounded-full transition">Consultancy</Link>
-              <Link href="#" className="px-4 py-2 text-base font-medium text-gray-700 hover:bg-white rounded-full transition">About Us</Link>
+              <Link href="/papers" className="px-4 py-2 text-base font-medium text-gray-700 hover:bg-white rounded-full transition">AutoGrade</Link>
+              <button onClick={() => document.getElementById('consultancy')?.scrollIntoView({ behavior: 'smooth' })} className="px-4 py-2 text-base font-medium text-gray-700 hover:bg-white rounded-full transition cursor-pointer">Consultancy</button>
+              <Link href="/about" className="px-4 py-2 text-base font-medium text-gray-700 hover:bg-white rounded-full transition">About Us</Link>
             </nav>
           </div>
 
           <div className="ml-auto flex items-center gap-4">
-            <Link href="/login" className="text-base font-medium text-gray-700">Log in</Link>
-            <button className="bg-gray-900 text-white px-6 py-2.5 rounded-full text-base font-semibold hover:bg-gray-800 transition">
+            <Link href="/signin" className="text-base font-medium text-gray-700">Log in</Link>
+            <button className="bg-gray-900 text-white px-6 py-2.5 rounded-full text-base font-semibold hover:bg-gray-800 transition cursor-pointer">
               Book a demo
             </button>
           </div>
@@ -188,7 +188,7 @@ export default function HomePage() {
             </p>
 
             <div className="flex gap-3 mt-6">
-              <button className="bg-gray-900 text-white px-5 py-2 rounded-xl text-base font-semibold">
+              <button className="bg-gray-900 text-white px-5 py-2 rounded-xl text-base font-semibold cursor-pointer">
                 Try AutoGrade Free
               </button>
             </div>
@@ -285,7 +285,7 @@ export default function HomePage() {
       </section>
 
       {/* ─── PROBLEM SECTION ─── */}
-      <section className="py-12 bg-gray-50">
+      {/* <section className="py-12 bg-gray-50">
         <div className={CONTAINER}>
 
           <div className="grid md:grid-cols-4 gap-6 mb-6">
@@ -310,10 +310,10 @@ export default function HomePage() {
           </Animate>
 
         </div>
-      </section>
+      </section> */}
 
       {/* ─── TIME SAVED SECTION ─── */}
-      <section className="py-12 bg-gray-50">
+      {/* <section className="py-12 bg-gray-50">
         <div className={CONTAINER}>
 
           <Animate>
@@ -351,7 +351,7 @@ export default function HomePage() {
           </div>
 
         </div>
-      </section>
+      </section> */}
 
       {/* ─── TESTIMONIAL SECTION ─── */}
       <section className="bg-gray-50 py-12">
@@ -377,7 +377,7 @@ export default function HomePage() {
           <Animate>
             <div className="bg-gray-900 text-white rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
               <h3 className="text-2xl font-bold">Reclaim your time. Revolutionise your classroom.</h3>
-              <button className="bg-white text-gray-900 px-5 py-2 rounded-xl text-base font-semibold">
+              <button className="bg-white text-gray-900 px-5 py-2 rounded-xl text-base font-semibold cursor-pointer">
                 Start free trial
               </button>
             </div>
@@ -409,8 +409,8 @@ export default function HomePage() {
                 <li>✔ Full transparency with students</li>
               </ul>
               <div className="flex gap-3 mt-6 justify-center">
-                <button className="bg-gray-900 text-white px-5 py-2 rounded-xl text-base">Try AutoGrade Free</button>
-                <button className="border px-5 py-2 rounded-xl text-base">View Demo</button>
+                <button className="bg-gray-900 text-white px-5 py-2 rounded-xl text-base cursor-pointer">Try AutoGrade Free</button>
+                <button className="border px-5 py-2 rounded-xl text-base cursor-pointer">View Demo</button>
               </div>
             </div>
           </Animate>
@@ -440,7 +440,7 @@ export default function HomePage() {
       </section>
 
       {/* ─── EXPLORE SECTION ─── */}
-      <section className="bg-gray-50 py-12">
+      <section id="consultancy" className="bg-gray-50 py-12">
         <div className={CONTAINER}>
 
           <Animate>
