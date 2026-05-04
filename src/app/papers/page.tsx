@@ -24,28 +24,41 @@ export default function PapersPage() {
   const [loading, setLoading] = useState(true)
   const [isDemo, setIsDemo] = useState(false)
 
-  useEffect(() => {
-    async function loadPapers() {
-      try {
-        const res = await fetch('/api/papers')
-        const data = await res.json()
-        if (res.ok && Array.isArray(data) && data.length > 0) {
-          setPapers(data)
-          setIsDemo(false)
-        } else {
-          setPapers(DEMO_PAPERS)
-          setIsDemo(true)
-        }
-      } catch {
-        setPapers(DEMO_PAPERS)
-        setIsDemo(true)
-      } finally {
-        setLoading(false)
-      }
-    }
-    loadPapers()
-  }, [])
+//   useEffect(() => {
+//     async function loadPapers() {
+//       try {
+//         const res = await fetch('/api/papers')
+//         const data = await res.json()
+//         if (res.ok && Array.isArray(data) && data.length > 0) {
+//           setPapers(data)
+//           setIsDemo(false)
+//         } else {
+//           setPapers(DEMO_PAPERS)
+//           setIsDemo(true)
+//         }
+//       } catch {
+//         setPapers(DEMO_PAPERS)
+//         setIsDemo(true)
+//       } finally {
+//         setLoading(false)
+//       }
+//     }
+//     loadPapers()
+//   }, [])
 
+async function loadPapers() {
+  try {
+    const res = await fetch('/api/papers')
+    const data = await res.json()
+    if (res.ok && Array.isArray(data)) {
+      setPapers(data)
+    }
+  } catch {
+    // silently fail — shows empty list
+  } finally {
+    setLoading(false)
+  }
+}
   return (
     <main className="min-h-screen bg-[#f5f5f5]">
       <EdgenTopBar />

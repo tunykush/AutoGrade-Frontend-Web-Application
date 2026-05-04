@@ -5,7 +5,11 @@ export async function PATCH(req: NextRequest) {
   const cookieStore = await cookies()
   const token = cookieStore.get('access_token')?.value
 
-  const { paperId, submissionId, overrides } = await req.json()
+  const { paperId, submissionId, student_id } = await req.json()
+
+  if (!paperId || !submissionId || !student_id) {
+    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+  }
 
   const headers: Record<string, string> = {
     'Ocp-Apim-Subscription-Key': process.env.EDAI_API_KEY!,
@@ -16,8 +20,12 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const res = await fetch(
-      `https://edgenai-api.azure-api.net/api/v2/ag/paper/${paperId}/submission/${submissionId}/ag_api_apply_review`,
-      { method: 'PATCH', headers, body: JSON.stringify({ overrides }) }
+      `https://edgenai-api.azure-api.net/api/v2/ag/paper/${paperId}/submission/${submissionId}/ag_api_update_submission_meta`,
+      {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ student_id }),
+      }
     )
     const text = await res.text()
     try {
