@@ -9,6 +9,7 @@ import SummaryItem from '@/components/ui/SummaryItem';
 import Step from '@/components/sections/Step';
 import Testimonial from '@/components/sections/Testimonial';
 import FAQItem from '@/components/sections/FAQItem';
+import { NeatGradient } from '@firecms/neat';
  
 // Single source of truth for horizontal padding
 const CONTAINER = "max-w-[1200px] mx-auto px-6 md:px-10";
@@ -152,16 +153,85 @@ export default function HomePage() {
   const [hoverUni, setHoverUni] = useState(false);
   const [hoverLms, setHoverLms] = useState(false);
 
+  const [hoverTryFree, setHoverTryFree] = useState(false);
+  const [hoverViewDemo, setHoverViewDemo] = useState(false);
+  const [hoverBookDemo, setHoverBookDemo] = useState(false);
+
+
+  const gradientRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (!gradientRef.current) return;
+
+    const gradient = new NeatGradient({
+      ref: gradientRef.current,
+      colors: [
+        { color: '#324B73', enabled: true },
+        { color: '#3f4756', enabled: true },
+        { color: '#23334A', enabled: true },
+        { color: '#485770', enabled: true },
+      ],
+      speed: 3,
+      horizontalPressure: 5,
+      verticalPressure: 7,
+      waveFrequencyX: 2,
+      waveFrequencyY: 2,
+      waveAmplitude: 8,
+      shadows: 6,
+      highlights: 8,
+      colorBrightness: 1,
+      colorSaturation: 7,
+      wireframe: false,
+      colorBlending: 10,
+      backgroundColor: '#23334A',
+      backgroundAlpha: 1,
+      grainScale: 3,
+      grainSparsity: 0,
+      grainIntensity: 0.3,
+      grainSpeed: 1,
+      resolution: 1,
+    });
+
+    const handleScroll = () => { gradient.yOffset = window.scrollY; };
+    window.addEventListener('scroll', handleScroll);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      gradient.destroy();
+    };
+  }, []);
  
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: '#F8F5F0', color: '#23334A', fontFamily: 'Arial, Helvetica, sans-serif' }}>
  
       {/* ─── NAVBAR + HERO (single unified dark section) ─── */}
-      <section style={{
-        background: 'linear-gradient(180deg, #23334A 0%, #23334A 73%, #F8F5F0 100%)',
-        paddingBottom: '160px',
-      }}>
- 
+      <section style={{ position: 'relative', paddingBottom: '160px' }}>
+
+        {/* Animated gradient canvas */}
+        <canvas
+          ref={gradientRef}
+          id="gradient"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            zIndex: 0,
+          }}
+        />
+
+        {/* Fade at the bottom */}
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          width: '100%',
+          height: '400px',
+          background: 'linear-gradient(to bottom, transparent 0%, rgba(248,245,240,0.4) 40%, rgba(248,245,240,0.85) 70%, #F8F5F0 100%)',
+          zIndex: 1,
+        }} />
+      
         {/* Navbar */}
         <header className="w-full sticky top-0 z-40 py-4" style={{ backgroundColor: 'transparent' }}>
           <div className="w-full px-6 md:px-10 flex items-center">
@@ -179,18 +249,20 @@ export default function HomePage() {
 
             {/* Desktop nav */}
             <nav className="hidden md:flex gap-1 ml-6">
-              <Link href="/papers" className="px-4 py-2 text-sm font-medium rounded-full transition" style={{ color: 'rgba(255,255,255,0.85)' }}>AutoGrade</Link>
+              <Link href="/papers" className="nav-link px-4 py-2 text-base font-medium rounded-full transition" style={{ color: 'rgba(255,255,255,0.85)' }}>AutoGrade</Link>
               <button onClick={() => document.getElementById('consultancy')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-4 py-2 text-sm font-medium rounded-full transition cursor-pointer" style={{ color: 'rgba(255,255,255,0.85)' }}>
+                className="nav-link px-4 py-2 text-base font-medium rounded-full transition cursor-pointer" style={{ color: 'rgba(255,255,255,0.85)' }}>
                 Consultancy
               </button>
-              <Link href="/about" className="px-4 py-2 text-sm font-medium rounded-full transition" style={{ color: 'rgba(255,255,255,0.85)' }}>About Us</Link>
+              <Link href="/about" className="nav-link px-4 py-2 text-base font-medium rounded-full transition" style={{ color: 'rgba(255,255,255,0.85)' }}>About Us</Link>
             </nav>
 
-            <div className="hidden md:flex ml-auto items-center gap-4">
-              <Link href="/signin" className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>Log In</Link>
-              <button className="px-5 py-2.5 rounded-full text-sm font-semibold cursor-pointer transition hover:opacity-90"
-                style={{ backgroundColor: 'white', color: '#23334A' }}>
+            <div className="hidden md:flex ml-auto items-center gap-6">
+              <Link href="/signin" className="nav-link px-4 py-2 text-base font-medium rounded-full transition cursor-pointer" style={{ color: 'rgba(255,255,255,0.85)' }}>Log In</Link>
+              <button
+                className="w-full sm:w-auto px-8 py-3.5 rounded-full text-sm font-semibold cursor-pointer transition hover:bg-white/30"
+                style={{ color: 'white', border: '1.5px solid rgba(255,255,255,0.45)' }}
+              >
                 Book a demo
               </button>
             </div>
@@ -243,9 +315,9 @@ export default function HomePage() {
         </header>
  
         {/* Hero content */}
-        <div className={`${CONTAINER} text-center pt-32 pb-8`}>
+        <div className={`${CONTAINER} text-center pt-32 pb-8`} style={{ position: 'relative', zIndex: 10 }}>
           <Animate delay={0}>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black leading-tight text-white mb-6">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight text-white mb-6">
               Grade Assignments<br />10x Faster with EdGenAI
             </h1>
             <p className="text-base md:text-lg mb-10 mx-auto max-w-xl" style={{ color: 'rgba(199,217,229,0.85)' }}>
@@ -254,13 +326,19 @@ export default function HomePage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button
-                className="w-full sm:w-auto px-8 py-3.5 rounded-full text-sm font-semibold cursor-pointer transition hover:opacity-90"
-                style={{ backgroundColor: 'white', color: '#23334A' }}
+                onMouseEnter={() => setHoverTryFree(true)}
+                onMouseLeave={() => setHoverTryFree(false)}
+                className="w-full sm:w-auto px-8 py-3.5 rounded-full text-sm font-semibold cursor-pointer transition"
+                style={{
+                  backgroundColor: hoverTryFree ? '#23334a9e' : 'white',
+                  color: hoverTryFree ? 'white' : '#23334A',
+                  border: '1.5px solid white',
+                }}
               >
                 Try AutoGrade Free
               </button>
               <button
-                className="w-full sm:w-auto px-8 py-3.5 rounded-full text-sm font-semibold cursor-pointer transition hover:bg-white/10"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-full text-sm font-semibold cursor-pointer transition hover:bg-white/30"
                 style={{ color: 'white', border: '1.5px solid rgba(255,255,255,0.45)' }}
               >
                 View Demo
@@ -274,7 +352,7 @@ export default function HomePage() {
  
               {/* Universities */}
               <div className="flex flex-col items-center gap-3 w-full md:w-[380px] md:h-[150px]">
-                <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(199,217,229,0.65)', letterSpacing: '0.1em' }}>
+                <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#f8f5f0b5', letterSpacing: '0.1em' }}>
                   Supported by leading universities
                 </p>
                 <div
@@ -295,7 +373,7 @@ export default function HomePage() {
  
               {/* LMS Platforms */}
               <div className="flex flex-col items-center gap-3 w-full md:w-[380px] md:h-[150px]">
-                <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(199,217,229,0.65)', letterSpacing: '0.1em' }}>
+                <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#f8f5f0b5', letterSpacing: '0.1em' }}>
                   Integrates seamlessly with LMS platforms
                 </p>
                 <div
