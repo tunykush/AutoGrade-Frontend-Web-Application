@@ -205,7 +205,7 @@ export default function HomePage() {
     <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: '#F8F5F0', color: '#23334A', fontFamily: 'Arial, Helvetica, sans-serif' }}>
  
       {/* ─── NAVBAR + HERO (single unified dark section) ─── */}
-      <section style={{ position: 'relative', paddingBottom: '160px' }}>
+      <section style={{ position: 'relative', paddingBottom: '80px' }}>
 
         {/* Animated gradient canvas */}
         <canvas
@@ -400,8 +400,8 @@ export default function HomePage() {
       </section>
  
       {/* ─── VIDEO + FEATURE LIST SECTION ─── */}
-      <section className="py-16 md:py-20" style={{ backgroundColor: '#F8F5F0' }}>
-        <div className={`${CONTAINER} grid md:grid-cols-2 gap-10 md:gap-12 items-center`}>
+      <section className="pt-8 md:pt-12 pb-24 md:pb-32" style={{ backgroundColor: '#F8F5F0' }}>
+        <div className={`${CONTAINER} max-w-7xl mx-auto grid md:grid-cols-[4fr_3fr] gap-12 items-center justify-center`}>
           <Animate delay={0}>
             <div
               className="w-full aspect-video rounded-2xl shadow-lg flex items-center justify-center relative overflow-hidden"
@@ -411,7 +411,7 @@ export default function HomePage() {
             </div>
           </Animate>
           <Animate delay={120}>
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col justify-center h-full gap-5">
               {[
                 "Review AI suggestions before finalising grades",
                 "Apply your professional judgement at every step",
@@ -430,7 +430,7 @@ export default function HomePage() {
                   <p className="text-sm leading-relaxed" style={{ color: '#23334A' }}>{item}</p>
                 </div>
               ))}
-              <div className="mt-4">
+              <div className="mt-4 flex md:block justify-center">
                 <button
                   className="px-7 py-3 rounded-full text-sm font-semibold cursor-pointer transition hover:opacity-90 text-white"
                   style={{ backgroundColor: '#324B73' }}
