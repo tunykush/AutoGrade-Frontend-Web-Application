@@ -157,6 +157,8 @@ export default function HomePage() {
   const [hoverViewDemo, setHoverViewDemo] = useState(false);
   const [hoverBookDemo, setHoverBookDemo] = useState(false);
 
+  const [hoverTimeSaved, setHoverTimeSaved] = useState(false);
+
 
   const gradientRef = useRef<HTMLCanvasElement>(null);
 
@@ -432,7 +434,7 @@ export default function HomePage() {
               ))}
               <div className="mt-4 flex md:block justify-center">
                 <button
-                  className="px-7 py-3 rounded-full text-sm font-semibold cursor-pointer transition hover:opacity-90 text-white"
+                  className="self-center mt-4 px-20 py-4 rounded-full text-sm font-semibold cursor-pointer transition-transform duration-300 hover:scale-105 text-white"
                   style={{ backgroundColor: '#324B73' }}
                 >
                   Try AutoGrade Free
@@ -444,98 +446,87 @@ export default function HomePage() {
       </section>
  
       {/* ─── WORKFLOW ─── */}
-      <section className="py-16 md:py-20" style={{ backgroundColor: '#23334A' }}>
+      <section className="py-24 md:py-24" style={{ backgroundColor: '#23334A' }}>
         <div className={CONTAINER}>
-          <Animate>
-            <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center mb-12 md:mb-16">
-              <h2 className="text-3xl md:text-4xl font-black text-white leading-tight">
-                Transform your grading<br />workflow using just<br /><span style={{ color: '#C7D9E5' }}>4 steps</span>
+          <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-center">
+            <Animate>
+              <h2 className="text-3xl md:text-4xl font-bold leading-tight" style={{ color: '#C7D9E5' }}>
+                Transform your grading<br />workflow using just<br />
+                <span className="font-black text-white">4 steps</span>
               </h2>
-              <p className="text-base" style={{ color: '#C7D9E5' }}>
-                AutoGrade turns hours of manual marking into a streamlined, AI-assisted review process — giving you back the time that matters.
-              </p>
-            </div>
-          </Animate>
-          <Animate delay={80}>
-            <div className="relative mb-10">
-              <div className="absolute top-4 left-0 right-0 h-px" style={{ backgroundColor: 'rgba(199,217,229,0.25)' }} />
-              <div className="grid grid-cols-4 relative">
-                {[1, 2, 3, 4].map((num) => (
-                  <div key={num} className="flex justify-center">
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border"
-                      style={{ backgroundColor: '#23334A', borderColor: '#C7D9E5', color: '#C7D9E5' }}
-                    >
-                      {num}
-                    </div>
+            </Animate>
+            <div className="grid grid-cols-2 gap-4 items-stretch">
+              {[
+                { title: "Upload Assignments", desc: "Drag and drop student work in any format, including handwritten scans, PDFs, Word docs, or images." },
+                { title: "Set your Rubric", desc: "Define your grading criteria once and reuse across multiple submission uploads." },
+                { title: "AI grades & suggests", desc: "Automatically generate consistent, rubric-aligned feedback." },
+                { title: "Review & Approve", desc: "Edit, refine, and approve before sharing with students." },
+              ].map((step, i) => (
+                <Animate key={i} delay={i * 80}>
+                  <div className="rounded-xl p-5 text-center h-full flex flex-col items-center justify-center" style={{ backgroundColor: 'rgba(199,217,229,0.08)', border: '1px solid rgba(199,217,229,0.15)' }}>
+                    <h3 className="font-bold text-base mb-2" style={{ color: 'white' }}>{i + 1}. {step.title}</h3>
+                    <p className="text-sm leading-relaxed" style={{ color: '#C7D9E5', opacity: 0.75 }}>{step.desc}</p>
                   </div>
-                ))}
-              </div>
+                </Animate>
+              ))}
             </div>
-          </Animate>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {[
-              { title: "Upload Assignments", desc: "Drag and drop student work in any format, including handwritten scans, PDFs, Word docs, or images." },
-              { title: "Set your Rubric", desc: "Define your grading criteria once and reuse across submissions." },
-              { title: "AI grades & suggests", desc: "Automatically generate consistent, rubric-aligned feedback." },
-              { title: "Review & Approve", desc: "Edit, refine, and approve before sharing with students." },
-            ].map((step, i) => (
-              <Animate key={i} delay={i * 80}>
-                <div className="rounded-xl p-5" style={{ backgroundColor: 'rgba(199,217,229,0.08)', border: '1px solid rgba(199,217,229,0.15)' }}>
-                  <h3 className="font-bold text-base mb-2" style={{ color: 'white' }}>{step.title}</h3>
-                  <p className="text-sm leading-relaxed" style={{ color: '#C7D9E5', opacity: 0.75 }}>{step.desc}</p>
-                </div>
-              </Animate>
-            ))}
           </div>
         </div>
       </section>
  
       {/* ─── TIME SAVED SECTION ─── */}
-      <section className="py-16 md:py-20" style={{ backgroundColor: '#F8F5F0' }}>
+      <section className="py-28 md:py-28" style={{ backgroundColor: '#F8F5F0' }}>
         <div className={CONTAINER}>
+          
+          {/* Full-width centered heading */}
+          <Animate delay={0}>
+            <div className="text-center mb-10 md:mb-14">
+              <h2 className="text-3xl md:text-4xl font-black mb-4 leading-tight" style={{ color: '#23334A' }}>
+                Time saved, life reclaimed
+              </h2>
+              <p className="text-base max-w-xl mx-auto" style={{ color: '#324B73', opacity: 0.75 }}>
+                AutoGrade transforms hours of marking into minutes, giving you back the time that matters.
+              </p>
+            </div>
+          </Animate>
+
+          {/* Two columns */}
           <div className="grid md:grid-cols-2 gap-10 md:gap-16 items-center">
-            <Animate delay={0}>
-              <div className="rounded-2xl p-6 md:p-8 shadow-sm" style={{ backgroundColor: 'white', border: '1px solid rgba(50,75,115,0.1)' }}>
-                <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#324B73', opacity: 0.6 }}>Average time per assignment batch</p>
-                <p className="text-sm mb-6" style={{ color: '#23334A', opacity: 0.6 }}>Class of 30 students, essay assignment</p>
-                <div className="flex flex-col gap-5">
-                  <ProgressBar label="Manual" value={90} rightText="10 hrs" />
-                  <ProgressBar label="AutoGrade" value={15} rightText="1.5 hrs" />
-                </div>
-                <p className="mt-6 text-sm text-center" style={{ color: '#23334A' }}>
-                  Save up to <span className="font-bold text-xl">85%</span> of your marking time
-                </p>
-              </div>
-            </Animate>
-            <Animate delay={120}>
-              <div>
-                <h2 className="text-3xl md:text-4xl font-black mb-4 leading-tight" style={{ color: '#23334A' }}>
-                  Time saved,<br />life reclaimed
-                </h2>
-                <p className="text-base mb-8" style={{ color: '#324B73', opacity: 0.75 }}>
-                  AutoGrade transforms hours of marking into minutes, giving you back the time that matters.
-                </p>
-                <div className="rounded-2xl p-5 md:p-6" style={{ backgroundColor: '#23334A' }}>
-                  <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#C7D9E5', opacity: 0.7 }}>Minutes per task comparison</p>
-                  <p className="text-sm mb-5" style={{ color: '#C7D9E5', opacity: 0.55 }}>Traditional vs AutoGrade assisted</p>
-                  <div className="flex flex-col gap-4">
-                    <ProgressBar label="Essay Marking" value={85} subValue={15} rightText="45 min → 8 min" />
-                    <ProgressBar label="Q&A Grading" value={70} subValue={10} rightText="30 min → 5 min" />
-                    <ProgressBar label="Report Review" value={80} subValue={14} rightText="40 min → 7 min" />
-                    <ProgressBar label="Report Writing" value={60} subValue={12} rightText="25 min → 4 min" />
+            <Animate delay={80}>
+              <div className="flex flex-col gap-4">
+                <div className="rounded-2xl p-6 md:p-8 shadow-sm" style={{ backgroundColor: 'white', border: '1px solid rgba(50,75,115,0.1)' }}>
+                  <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#324B73', opacity: 0.8 }}>Average time per assignment batch</p>
+                  <p className="text-sm mb-6" style={{ color: '#23334A', opacity: 1 }}>Class of 30 students, essay assignment</p>
+                  <div className="flex flex-col gap-5">
+                    <ProgressBar label="Manual" value={90} rightText="10 hrs" />
+                    <ProgressBar label="AutoGrade" value={15} rightText="1.5 hrs" />
                   </div>
-                  <div className="flex gap-5 mt-5 text-xs justify-center" style={{ color: '#C7D9E5', opacity: 0.6 }}>
-                    <span className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'rgba(199,217,229,0.3)' }} />Traditional</span>
-                    <span className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#C7D9E5' }} />With AutoGrade</span>
-                  </div>
+                  <p className="mt-6 text-sm text-center" style={{ color: '#23334A' }}>
+                    Save up to <span className="font-bold text-xl">85%</span> of your marking time
+                  </p>
                 </div>
                 <button
-                  className="mt-8 px-7 py-3 rounded-full text-sm font-semibold cursor-pointer transition hover:opacity-90 text-white"
+                  className="self-center mt-4 px-20 py-4 rounded-full text-sm font-semibold cursor-pointer transition-transform duration-300 hover:scale-105 text-white"
                   style={{ backgroundColor: '#324B73' }}
                 >
                   Try AutoGrade Free
                 </button>
+              </div>
+            </Animate>
+            <Animate delay={160}>
+              <div className="rounded-2xl p-5 md:p-6" style={{ backgroundColor: '#23334A' }}>
+                <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#C7D9E5', opacity: 1 }}>Minutes per task comparison</p>
+                <p className="text-sm mb-5" style={{ color: '#C7D9E5', opacity: 0.55 }}>Traditional vs AutoGrade assisted</p>
+                <div className="flex flex-col gap-4">
+                  <ProgressBar label="Essay Marking" value={85} subValue={15} rightText="45 min → 8 min" />
+                  <ProgressBar label="Q&A Grading" value={70} subValue={10} rightText="30 min → 5 min" />
+                  <ProgressBar label="Report Review" value={80} subValue={14} rightText="40 min → 7 min" />
+                  <ProgressBar label="Report Writing" value={60} subValue={12} rightText="25 min → 4 min" />
+                </div>
+                <div className="flex gap-5 mt-5 text-xs justify-center" style={{ color: '#C7D9E5', opacity: 1 }}>
+                  <span className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'rgba(199,217,229,0.35)' }} />Traditional</span>
+                  <span className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#ffffff' }} />With AutoGrade</span>
+                </div>
               </div>
             </Animate>
           </div>
