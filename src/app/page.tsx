@@ -78,9 +78,7 @@ export default function HomePage() {
       bullets: [
         "Workflow automation for admin, support, and academic teams",
         "AI-driven knowledge bases and helpdesk assistants",
-        "Automated student onboarding, reminders, and progress nudges",
         "Custom integrations connecting LMS, SIS, CRM, and communication platforms",
-        "Compatible with LMS platforms including Moodle, Canvas, and LTI-enabled systems",
         "Efficiency analytics to track time savings and ROI",
       ],
     },
@@ -91,7 +89,6 @@ export default function HomePage() {
         "Practical GenAI use cases for teaching, assessment, and administration",
         "Ready-to-use prompts, templates, and lesson " + '"recipes"',
         "Strategies for designing AI-assisted assessments",
-        "Techniques for providing AI-supported personalized feedback",
         "Ethical and safe AI use: bias, integrity, transparency, and oversight",
       ],
     },
@@ -102,7 +99,6 @@ export default function HomePage() {
         "Privacy-first AI adoption strategy",
         "Compliance with local regulations and institutional policies",
         "Secure data handling and model-access controls",
-        "AI risk, auditability, and bias-mitigation frameworks",
         "Staff guidelines, governance playbooks, and responsible AI policies",
       ],
     },
@@ -112,7 +108,6 @@ export default function HomePage() {
       bullets: [
         "Modular, outcome-aligned course design frameworks",
         "AI-assisted creation of lessons, activities, readings, and resources",
-        "Adaptive content pathways based on learner progress",
         "Integration of AI products into curriculum delivery",
         "Templates and design kits for rapid course development",
       ],
@@ -123,7 +118,6 @@ export default function HomePage() {
       bullets: [
         "AI-assisted design of quizzes, assignments, and exams",
         "Rubric-aligned tasks that maintain academic rigor",
-        "Automated formative and summative feedback at scale",
         "Bias-aware and integrity-focused assessment frameworks",
         "Analytics to track performance, engagement, and learning outcomes",
       ],
@@ -133,7 +127,6 @@ export default function HomePage() {
       description: "We partner with leaders, educators, and technical teams to help them use AI effectively, sustainably, and ethically, no matter the starting point.",
       bullets: [
         "1:1 or team-based AI strategy and implementation guidance",
-        "Review of existing workflows, pain points, and opportunities",
         "Hands-on support in prompt engineering and product selection",
         "Roadmaps for scaling AI pilots across departments",
         "Continuous improvement and impact monitoring",
@@ -158,6 +151,8 @@ export default function HomePage() {
   const [hoverBookDemo, setHoverBookDemo] = useState(false);
 
   const [hoverTimeSaved, setHoverTimeSaved] = useState(false);
+
+  const [hoverConsult, setHoverConsult] = useState(false);
 
 
   const gradientRef = useRef<HTMLCanvasElement>(null);
@@ -446,7 +441,7 @@ export default function HomePage() {
       </section>
  
       {/* ─── WORKFLOW ─── */}
-      <section className="py-24 md:py-24" style={{ backgroundColor: '#23334A' }}>
+      <section className="py-24 md:py-24" style={{ background: 'linear-gradient(135deg, #23334A 0%, #1a2a3a 50%, #2a4060 100%)' }}>
         <div className={CONTAINER}>
           <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-center">
             <Animate>
@@ -534,7 +529,7 @@ export default function HomePage() {
       </section>
  
       {/* ─── TESTIMONIAL SECTION ─── */}
-      <section className="py-16 md:py-20" style={{ backgroundColor: '#324B73' }}>
+      <section className="py-16 md:py-20" style={{ background: 'linear-gradient(135deg, #23334A 0%, #324B73 50%, #2a4060 100%)' }}>
         <div className={CONTAINER}>
           <Animate>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-0 md:divide-x" style={{ borderColor: 'rgba(199,217,229,0.2)' }}>
@@ -575,7 +570,7 @@ export default function HomePage() {
       </section>
  
       {/* ─── EXPLORE / CONSULTANCY SECTION ─── */}
-      <section id="consultancy" className="py-16 md:py-20" style={{ backgroundColor: '#F8F5F0' }}>
+      <section id="consultancy" className="py-24 md:py-24" style={{ backgroundColor: '#F8F5F0' }}>
         <div className={CONTAINER}>
           <Animate>
             <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#324B73' }}>Our Services</p>
@@ -585,12 +580,12 @@ export default function HomePage() {
             </h2>
           </Animate>
           <Animate delay={80}>
-            <div className="flex flex-wrap gap-2 mt-8 md:mt-10 mb-6 md:mb-8 border-b pb-4" style={{ borderColor: 'rgba(50,75,115,0.15)' }}>
+            <div className="flex flex-nowrap gap-2 mt-8 md:mt-10 mb-6 md:mb-8 border-b pb-4 overflow-x-auto" style={{ borderColor: 'rgba(50,75,115,0.15)' }}>
               {exploreItems.map((item, index) => (
                 <button
                   key={index}
                   onClick={() => setActiveIndex(index)}
-                  className="px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-medium cursor-pointer transition"
+                  className="px-3 py-1.5 rounded-full text-sm font-medium cursor-pointer transition whitespace-nowrap flex-shrink-0"
                   style={{
                     backgroundColor: activeIndex === index ? '#23334A' : 'transparent',
                     color: activeIndex === index ? 'white' : '#324B73',
@@ -603,26 +598,51 @@ export default function HomePage() {
             </div>
           </Animate>
           <Animate delay={120}>
-            <div className="rounded-2xl p-6 md:p-8 shadow-sm" style={{ backgroundColor: 'white', border: '1px solid rgba(50,75,115,0.1)' }}>
-              <h3 className="text-lg md:text-xl font-bold mb-3" style={{ color: '#23334A' }}>{exploreItems[activeIndex].title}</h3>
-              <p className="text-sm leading-relaxed mb-5" style={{ color: '#324B73', opacity: 0.8 }}>{exploreItems[activeIndex].description}</p>
-              {exploreItems[activeIndex].bullets && (
-                <ul className="flex flex-col gap-2">
-                  {exploreItems[activeIndex].bullets.map((bullet, i) => (
-                    <li key={i} className="flex items-start gap-3 text-sm" style={{ color: '#23334A' }}>
-                      <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: '#324B73' }} />
-                      {bullet}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <div className="mt-8">
-                <button
-                  className="px-7 py-3 rounded-full text-sm font-semibold cursor-pointer transition hover:opacity-90 text-white"
-                  style={{ backgroundColor: '#324B73' }}
-                >
-                  Book a consultation
-                </button>
+            <div className="rounded-2xl shadow-sm relative overflow-hidden" style={{ backgroundColor: 'white', border: '1px solid rgba(50,75,115,0.1)', minHeight: '300px' }}>
+              
+              {/* Background image with low opacity */}
+              <div
+                className="absolute inset-0 bg-cover bg-center"
+                style={{
+                  backgroundImage: `url('/logos/consultancy.jpg')`,
+                  opacity: 0.8,
+                }}
+              />
+
+              {/* Blue filter overlay */}
+              <div
+                className="absolute inset-0"
+                style={{ backgroundColor: '#23334A', opacity: 0.5 }}
+              />
+
+              {/* Content sits on top */}
+              <div className="relative z-10 p-6 md:p-8">
+                <h3 className="text-lg md:text-xl font-bold mb-3" style={{ color: 'white' }}>{exploreItems[activeIndex].title}</h3>
+                <p className="text-sm leading-relaxed mb-5" style={{ color: 'white', opacity: 0.8 }}>{exploreItems[activeIndex].description}</p>
+                {exploreItems[activeIndex].bullets && (
+                  <ul className="flex flex-col gap-2">
+                    {exploreItems[activeIndex].bullets.map((bullet, i) => (
+                      <li key={i} className="flex items-start gap-3 text-sm" style={{ color: 'white' }}>
+                        <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: 'white' }} />
+                        {bullet}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="mt-8">
+                  <button
+  onMouseEnter={() => setHoverConsult(true)}
+  onMouseLeave={() => setHoverConsult(false)}
+  className="px-7 py-3 rounded-full text-sm font-semibold cursor-pointer transition"
+  style={{
+    backgroundColor: hoverConsult ? '#23334A' : 'white',
+    color: hoverConsult ? 'white' : '#23334A',
+    border: hoverConsult ? '2px solid white' : '2px solid transparent',
+  }}
+>
+  Book a consultation
+</button>
+                </div>
               </div>
             </div>
           </Animate>
