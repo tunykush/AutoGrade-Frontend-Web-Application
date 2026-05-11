@@ -233,7 +233,7 @@ export default function HomePage() {
         <header className="w-full sticky top-0 z-40 py-4" style={{ backgroundColor: 'transparent' }}>
           <div className="w-full px-6 md:px-10 flex items-center">
 
-            <Link href="/homepage">
+            <Link href="/">
               <Image
                 src="/logos/EdGenAI_Logo.png"
                 alt="EdGenAI"
@@ -631,17 +631,17 @@ export default function HomePage() {
                 )}
                 <div className="mt-8">
                   <button
-  onMouseEnter={() => setHoverConsult(true)}
-  onMouseLeave={() => setHoverConsult(false)}
-  className="px-7 py-3 rounded-full text-sm font-semibold cursor-pointer transition"
-  style={{
-    backgroundColor: hoverConsult ? '#23334A' : 'white',
-    color: hoverConsult ? 'white' : '#23334A',
-    border: hoverConsult ? '2px solid white' : '2px solid transparent',
-  }}
->
-  Book a consultation
-</button>
+                    onMouseEnter={() => setHoverConsult(true)}
+                    onMouseLeave={() => setHoverConsult(false)}
+                    className="px-7 py-3 rounded-full text-sm font-semibold cursor-pointer transition"
+                    style={{
+                      backgroundColor: hoverConsult ? '#23334A' : 'white',
+                      color: hoverConsult ? 'white' : '#23334A',
+                      border: hoverConsult ? '2px solid white' : '2px solid transparent',
+                    }}
+                  >
+                    Book a consultation
+                  </button>
                 </div>
               </div>
             </div>
@@ -651,15 +651,16 @@ export default function HomePage() {
  
       {/* ─── FOOTER ─── */}
       <footer className="py-12 md:py-16" style={{ backgroundColor: '#23334A' }}>
-        <div className={`${CONTAINER} grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-12 items-start`}>
+        <div className={`${CONTAINER} grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-10 md:gap-12 items-start`}>
           <div>
-            <div className="flex items-center gap-3 mb-5">
-              <Image src="/logos/EdGenAI_Logo.png" alt="EdGenAI" width={40} height={40} style={{ filter: 'brightness(0) invert(1)' }} unoptimized />
-              <span className="text-white font-bold text-base">edgenAI</span>
+            <div>
+              <div className="flex items-center gap-5 mb-5">
+                <Image src="/logos/EdGenAI_Logo.png" alt="EdGenAI" width={110} height={110} style={{ filter: 'brightness(0) invert(1)' }} unoptimized />
+                <p className="text-2xl md:text-3xl font-semibold leading-snug" style={{ color: '#C7D9E5' }}>
+                  Step into the future<br />of learning with us.
+                </p>
+              </div>
             </div>
-            <p className="text-base md:text-lg font-semibold leading-snug max-w-xs" style={{ color: '#C7D9E5' }}>
-              Step into the future<br />of learning with us.
-            </p>
           </div>
           <div>
             <nav className="flex flex-col gap-3">
