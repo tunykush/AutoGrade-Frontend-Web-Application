@@ -68,8 +68,7 @@ export default function Navbar({ variant = 'dark', showConsultancy = false }: Na
             alt="EdGenAI"
             width={60}
             height={60}
-            style={{ filter: isDark ? 'brightness(0) invert(1)' : 'none' }}
-            unoptimized
+            style={{ filter: isDark ? 'brightness(0) invert(1)' : 'brightness(0)' }}            unoptimized
           />
         </Link>
 
