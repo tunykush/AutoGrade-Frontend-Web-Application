@@ -20,8 +20,15 @@ export async function POST(req: Request) {
     }
 
     const response = NextResponse.json({ access_token: data.access })
+    // HttpOnly cookie used by API routes for auth
     response.cookies.set('access_token', data.access, {
       httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+    })
+    // Non-HttpOnly flag cookie used by the client to show/hide Login/Logout in the navbar
+    response.cookies.set('is_logged_in', '1', {
+      httpOnly: false,
       sameSite: 'lax',
       path: '/',
     })

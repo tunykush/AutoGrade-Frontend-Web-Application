@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Paper } from '@/components/papers/types';
 import { normalizeStatus } from '@/components/papers/StatusBadge';
+import Navbar from '@/components/ui/Navbar';
 
 function CircleProgress({ progress }: { progress: number }) {
   const r = 18;
@@ -197,8 +198,9 @@ export default function PapersPage() {
   const successCount = papers.filter((p) => normalizeStatus(p.validation_status) === 'SUCCESS').length;
 
   return (
-    <main className="min-h-screen bg-[#f6f7f9] px-6 py-8 text-slate-900 md:px-10">
-      <div className="space-y-8">
+    <main className="min-h-screen bg-[#f6f7f9] text-slate-900">
+      <Navbar variant="light" showConsultancy/>
+      <div className="px-6 py-8 md:px-10 space-y-8">
 
         {/* Page title */}
         <div>

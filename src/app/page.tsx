@@ -10,6 +10,7 @@ import Step from '@/components/sections/Step';
 import Testimonial from '@/components/sections/Testimonial';
 import FAQItem from '@/components/sections/FAQItem';
 import { NeatGradient } from '@firecms/neat';
+import Navbar from '@/components/ui/Navbar';
  
 // Single source of truth for horizontal padding
 const CONTAINER = "max-w-[1200px] mx-auto px-6 md:px-10";
@@ -142,7 +143,6 @@ export default function HomePage() {
   }, []);
  
   const [activeIndex, setActiveIndex] = useState(0);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [hoverUni, setHoverUni] = useState(false);
   const [hoverLms, setHoverLms] = useState(false);
 
@@ -228,88 +228,7 @@ export default function HomePage() {
           background: 'linear-gradient(to bottom, transparent 0%, rgba(248,245,240,0.4) 40%, rgba(248,245,240,0.85) 70%, #F8F5F0 100%)',
           zIndex: 1,
         }} />
-      
-        {/* Navbar */}
-        <header className="w-full sticky top-0 z-40 py-4" style={{ backgroundColor: 'transparent' }}>
-          <div className="w-full px-6 md:px-10 flex items-center">
-
-            <Link href="/">
-              <Image
-                src="/logos/EdGenAI_Logo.png"
-                alt="EdGenAI"
-                width={60}
-                height={60}
-                style={{ filter: 'brightness(0) invert(1)' }}
-                unoptimized
-              />
-            </Link>
-
-            {/* Desktop nav */}
-            <nav className="hidden md:flex gap-1 ml-6">
-              <Link href="/papers" className="nav-link px-4 py-2 text-base font-medium rounded-full transition" style={{ color: 'rgba(255,255,255,0.85)' }}>AutoGrade</Link>
-              <button onClick={() => document.getElementById('consultancy')?.scrollIntoView({ behavior: 'smooth' })}
-                className="nav-link px-4 py-2 text-base font-medium rounded-full transition cursor-pointer" style={{ color: 'rgba(255,255,255,0.85)' }}>
-                Consultancy
-              </button>
-              <Link href="/about" className="nav-link px-4 py-2 text-base font-medium rounded-full transition" style={{ color: 'rgba(255,255,255,0.85)' }}>About Us</Link>
-            </nav>
-
-            <div className="hidden md:flex ml-auto items-center gap-6">
-              <Link href="/signin" className="nav-link px-4 py-2 text-base font-medium rounded-full transition cursor-pointer" style={{ color: 'rgba(255,255,255,0.85)' }}>Log In</Link>
-              <button
-                className="w-full sm:w-auto px-8 py-3.5 rounded-full text-sm font-semibold cursor-pointer transition hover:bg-white/30"
-                style={{ color: 'white', border: '1.5px solid rgba(255,255,255,0.45)' }}
-              >
-                Book a demo
-              </button>
-            </div>
-
-            {/* Hamburger button — mobile only */}
-            <button
-              className="md:hidden ml-auto flex flex-col gap-1.5 cursor-pointer p-2"
-              onClick={() => setMenuOpen(prev => !prev)}
-              aria-label="Toggle menu"
-            >
-              <span style={{ display: 'block', width: '22px', height: '2px', backgroundColor: 'white', borderRadius: '2px',
-                transform: menuOpen ? 'rotate(45deg) translateY(6px)' : 'none', transition: 'transform 0.2s ease' }} />
-              <span style={{ display: 'block', width: '22px', height: '2px', backgroundColor: 'white', borderRadius: '2px',
-                opacity: menuOpen ? 0 : 1, transition: 'opacity 0.2s ease' }} />
-              <span style={{ display: 'block', width: '22px', height: '2px', backgroundColor: 'white', borderRadius: '2px',
-                transform: menuOpen ? 'rotate(-45deg) translateY(-6px)' : 'none', transition: 'transform 0.2s ease' }} />
-            </button>
-
-          </div>
-
-          {/* Mobile dropdown */}
-          {menuOpen && (
-            <div className="md:hidden mx-4 mt-2 rounded-2xl overflow-hidden" style={{
-              background: 'rgba(35,51,74,0.95)',
-              backdropFilter: 'blur(16px)',
-              border: '1px solid rgba(255,255,255,0.15)',
-            }}>
-              <nav className="flex flex-col p-2">
-                <Link href="/papers" onClick={() => setMenuOpen(false)}
-                  className="px-4 py-3 text-sm font-medium rounded-xl" style={{ color: 'rgba(255,255,255,0.85)' }}>AutoGrade</Link>
-                <button onClick={() => { document.getElementById('consultancy')?.scrollIntoView({ behavior: 'smooth' }); setMenuOpen(false); }}
-                  className="px-4 py-3 text-sm font-medium rounded-xl text-left cursor-pointer" style={{ color: 'rgba(255,255,255,0.85)' }}>
-                  Consultancy
-                </button>
-                <Link href="/about" onClick={() => setMenuOpen(false)}
-                  className="px-4 py-3 text-sm font-medium rounded-xl" style={{ color: 'rgba(255,255,255,0.85)' }}>About Us</Link>
-                <div style={{ height: '1px', backgroundColor: 'rgba(255,255,255,0.1)', margin: '4px 16px' }} />
-                <Link href="/signin" onClick={() => setMenuOpen(false)}
-                  className="px-4 py-3 text-sm font-medium rounded-xl" style={{ color: 'rgba(255,255,255,0.85)' }}>Log In</Link>
-                <div className="p-2">
-                  <button className="w-full px-5 py-2.5 rounded-full text-sm font-semibold cursor-pointer"
-                    style={{ backgroundColor: 'white', color: '#23334A' }}>
-                    Book a demo
-                  </button>
-                </div>
-              </nav>
-            </div>
-          )}
-
-        </header>
+        <Navbar variant="dark" showConsultancy />
  
         {/* Hero content */}
         <div className={`${CONTAINER} text-center pt-32 pb-8`} style={{ position: 'relative', zIndex: 10 }}>
@@ -714,4 +633,3 @@ export default function HomePage() {
     </div>
   );
 }
- 
