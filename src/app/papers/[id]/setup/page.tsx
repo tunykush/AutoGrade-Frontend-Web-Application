@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, Upload, Loader2, Lock, BookOpen, ChevronRight,
-  CheckCircle2, AlertCircle, Pencil, X,
+  CheckCircle2, AlertCircle, Pencil, X, Plus, Trash2,
 } from 'lucide-react';
 import { normalizeStatus, isTerminal, isActive, StatusBadge } from '@/components/papers/StatusBadge';
 
@@ -259,7 +259,71 @@ export default function SetupPage() {
     }
   };
 
-  // ── Sample Answer ─────────────────────────────────────────────────────────
+  // ── Auto-resize textarea helper ───────────────────────────────────────────
+  const autoResize = (el: HTMLTextAreaElement) => {
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  };
+
+  // ── Rubric inline editing state ───────────────────────────────────────────
+  type PerfLevel = { level: string; description: string; score_range?: string; threshold?: string };
+  type Deduction = { reason: string; penalty: number };
+  type RubricDraft = { perfLevels: PerfLevel[]; deductions: Deduction[] };
+  const [editingRubricId, setEditingRubricId] = React.useState<string | null>(null);
+  const [rubricDraft, setRubricDraft] = React.useState<RubricDraft>({ perfLevels: [], deductions: [] });
+  const [rubricSaving, setRubricSaving] = React.useState(false);
+  const [rubricEditMsg, setRubricEditMsg] = React.useState<{ ok: boolean; text: string } | null>(null);
+
+  const saveRubricEdits = async (q: QRec, partId?: string) => {
+    setRubricSaving(true);
+    setRubricEditMsg(null);
+    try {
+      const payload = partId
+        ? { paper_id: paperId, canonical_question_id: partId, rubric: { performance_levels: rubricDraft.perfLevels, deductions: rubricDraft.deductions } }
+        : { paper_id: paperId, ...q, rubric: { performance_levels: rubricDraft.perfLevels, deductions: rubricDraft.deductions } };
+      const res = await fetch('/api/rh/update', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error ?? data?.message ?? 'Save failed');
+      setMasterData(prev => {
+        if (!prev) return prev;
+        const qs = Array.isArray((prev as QRec).questions) ? [...((prev as QRec).questions as QRec[])] : null;
+        if (!qs) return prev;
+        if (partId) {
+          const qi = qs.findIndex(q2 => Array.isArray((q2 as QRec).parts) && ((q2 as QRec).parts as QRec[]).some(p => String(p.canonical_question_id) === partId));
+          if (qi >= 0) {
+            const parts = [...((qs[qi] as QRec).parts as QRec[])];
+            const pi = parts.findIndex(p => String(p.canonical_question_id) === partId);
+            if (pi >= 0) parts[pi] = { ...parts[pi], rubric: { performance_levels: rubricDraft.perfLevels, deductions: rubricDraft.deductions } };
+            qs[qi] = { ...qs[qi], parts };
+          }
+        } else {
+          const qi = qs.findIndex(q2 => (q2 as QRec).canonical_question_id === q.canonical_question_id);
+          if (qi >= 0) qs[qi] = { ...qs[qi], rubric: { performance_levels: rubricDraft.perfLevels, deductions: rubricDraft.deductions } };
+        }
+        return { ...(prev as QRec), questions: qs } as Record<string, unknown>;
+      });
+      setEditingRubricId(null);
+    } catch (err) {
+      setRubricEditMsg({ ok: false, text: err instanceof Error ? err.message : 'Save failed' });
+    } finally {
+      setRubricSaving(false);
+    }
+  };
+
+  const startEditRubric = (id: string, perfLevels: QRec[], deductions: QRec[]) => {
+    setEditingRubricId(id);
+    setRubricDraft({
+      perfLevels: perfLevels.map(l => ({ level: String(l.level ?? ''), description: String(l.description ?? ''), score_range: l.score_range != null ? String(l.score_range) : undefined, threshold: l.threshold != null ? String(l.threshold) : undefined })),
+      deductions: deductions.map(d => ({ reason: String(d.reason ?? ''), penalty: Number(d.penalty ?? 0) })),
+    });
+    setRubricEditMsg(null);
+  };
+
+    // ── Sample Answer ─────────────────────────────────────────────────────────
   const [shPaperId, setShPaperId] = React.useState<number | null>(null);
   const [shFileName, setShFileName] = React.useState<string | null>(null);
   const [shStatus, setShStatus] = React.useState<string | null>(null);
@@ -562,9 +626,10 @@ export default function SetupPage() {
                           <div className="space-y-2">
                             <textarea
                               value={editDraft.text}
-                              onChange={e => setEditDraft(d => ({ ...d, text: e.target.value }))}
+                              onChange={e => { setEditDraft(d => ({ ...d, text: e.target.value })); }}
                               rows={3}
-                              className="w-full resize-none rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+                             
+                              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
                               placeholder="Question text…"
                             />
                             <div className="flex items-center gap-2">
@@ -627,10 +692,206 @@ export default function SetupPage() {
                               </span>
                             )}
                           </div>
-                          {pPerf.length > 0 && (
-                            <div className="space-y-1.5">
-                              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Performance Levels</p>
-                              {pPerf.map((lv, li) => {
+
+                        {/* Rubric Editor Component */}
+                        {(() => {
+                          const rubricId = String(part.canonical_question_id ?? pLabel);
+                          const isEditingRubric = editingRubricId === rubricId;
+                          return (
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Rubric</p>
+                                {!isEditingRubric ? (
+                                  <button type="button" onClick={() => startEditRubric(rubricId, pPerf, pDed)}
+                                    className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition">
+                                    <Pencil className="h-3 w-3" /> Edit
+                                  </button>
+                                ) : (
+                                  <div className="flex items-center gap-1">
+                                    <button type="button" disabled={rubricSaving} onClick={() => saveRubricEdits(q, String(part.canonical_question_id))}
+                                      className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-medium text-white transition hover:bg-emerald-700 disabled:opacity-60">
+                                      {rubricSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />} Save
+                                    </button>
+                                    <button type="button" onClick={() => { setEditingRubricId(null); setRubricEditMsg(null); }}
+                                      className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+                                      <X className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                              {isEditingRubric ? (
+                                <div className="space-y-3">
+                                  <div className="space-y-2">
+                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Performance Levels</p>
+                                    {rubricDraft.perfLevels.map((lv, li) => {
+                                      const { border } = bandColor(lv.level);
+                                      return (
+                                        <div key={li} className={`rounded-xl border p-3 space-y-2 ${border}`}>
+                                          <div className="flex items-center gap-2">
+                                            <input value={lv.level} onChange={e => setRubricDraft(d => { const pl = [...d.perfLevels]; pl[li] = {...pl[li], level: e.target.value}; return {...d, perfLevels: pl}; })}
+                                              className="w-32 rounded-lg border border-slate-200 px-2 py-1 text-xs outline-none focus:border-slate-400" placeholder="Band label" />
+                                            <input value={lv.score_range ?? ''} onChange={e => setRubricDraft(d => { const pl = [...d.perfLevels]; pl[li] = {...pl[li], score_range: e.target.value}; return {...d, perfLevels: pl}; })}
+                                              className="w-24 rounded-lg border border-slate-200 px-2 py-1 text-xs outline-none focus:border-slate-400" placeholder="Score range" />
+                                            <input value={lv.threshold ?? ''} onChange={e => setRubricDraft(d => { const pl = [...d.perfLevels]; pl[li] = {...pl[li], threshold: e.target.value}; return {...d, perfLevels: pl}; })}
+                                              className="w-20 rounded-lg border border-slate-200 px-2 py-1 text-xs outline-none focus:border-slate-400" placeholder="Threshold" />
+                                            <button type="button" onClick={() => setRubricDraft(d => { const pl = d.perfLevels.filter((_, i) => i !== li); return {...d, perfLevels: pl}; })}
+                                              className="ml-auto rounded p-1 text-slate-300 hover:bg-rose-50 hover:text-rose-500"><Trash2 className="h-3.5 w-3.5" /></button>
+                                          </div>
+                                          <textarea value={lv.description} onChange={e => { setRubricDraft(d => { const pl = [...d.perfLevels]; pl[li] = {...pl[li], description: e.target.value}; return {...d, perfLevels: pl}; }); }}
+                                            rows={2}
+                                            className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-slate-400" placeholder="Description…" />
+                                        </div>
+                                      );
+                                    })}
+                                    <button type="button" onClick={() => setRubricDraft(d => ({...d, perfLevels: [...d.perfLevels, {level: `Band ${d.perfLevels.length + 1}`, description: '', score_range: '', threshold: ''}]}))}
+                                      className="inline-flex items-center gap-1 rounded-lg border border-dashed border-slate-300 px-3 py-1.5 text-xs text-slate-500 hover:border-slate-400 hover:text-slate-700 transition">
+                                      <Plus className="h-3 w-3" /> Add Level
+                                    </button>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Deductions</p>
+                                    {rubricDraft.deductions.map((ded, di) => (
+                                      <div key={di} className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2">
+                                        <textarea value={ded.reason} onChange={e => { setRubricDraft(d => { const dd = [...d.deductions]; dd[di] = {...dd[di], reason: e.target.value}; return {...d, deductions: dd}; }); }}
+                                          rows={1}
+                                          className="flex-1 rounded-lg border border-rose-200 bg-white px-2 py-1 text-xs outline-none focus:border-rose-400" placeholder="Deduction reason…" />
+                                        <input type="number" step={0.5} value={ded.penalty} onChange={e => setRubricDraft(d => { const dd = [...d.deductions]; dd[di] = {...dd[di], penalty: Number(e.target.value)}; return {...d, deductions: dd}; })}
+                                          className="w-16 rounded-lg border border-rose-200 bg-white px-2 py-1 text-xs outline-none focus:border-rose-400" placeholder="−pts" />
+                                        <button type="button" onClick={() => setRubricDraft(d => ({ ...d, deductions: d.deductions.filter((_, i) => i !== di) }))}
+                                          className="rounded p-1 text-rose-300 hover:text-rose-600"><Trash2 className="h-3.5 w-3.5" /></button>
+                                      </div>
+                                    ))}
+                                    <button type="button" onClick={() => setRubricDraft(d => ({...d, deductions: [...d.deductions, {reason: '', penalty: 0}]}))}
+                                      className="inline-flex items-center gap-1 rounded-lg border border-dashed border-rose-300 px-3 py-1.5 text-xs text-rose-500 hover:border-rose-400 hover:text-rose-700 transition">
+                                      <Plus className="h-3 w-3" /> Add Deduction
+                                    </button>
+                                  </div>
+                                  {rubricEditMsg && <p className={`text-xs ${rubricEditMsg.ok ? 'text-emerald-600' : 'text-rose-600'}`}>{rubricEditMsg.text}</p>}
+                                </div>
+                              ) : (
+                                <div className="space-y-2">
+                                  {pPerf.map((lv, li) => {
+                                    const rawLv = String(lv.level ?? `Band ${li + 1}`);
+                                    const { pill, border } = bandColor(rawLv);
+                                    return (
+                                      <div key={li} className={`rounded-xl border px-4 py-3 space-y-1.5 ${border}`}>
+                                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${pill}`}>{rawLv}</span>
+                                          <div className="flex items-center gap-3 text-xs text-slate-500">
+                                            {lv.score_range != null && <span className="font-semibold text-slate-700">{String(lv.score_range)}</span>}
+                                            {lv.threshold != null && <span>{String(lv.threshold)}</span>}
+                                          </div>
+                                        </div>
+                                        {lv.description != null && <p className="text-sm text-slate-700 leading-relaxed">{String(lv.description)}</p>}
+                                      </div>
+                                    );
+                                  })}
+                                  {pDed.length > 0 && (
+                                    <div className="rounded-xl border border-rose-200 bg-rose-50 divide-y divide-rose-100">
+                                      {pDed.map((ded, di) => (
+                                        <div key={di} className="flex items-center justify-between px-4 py-2.5 gap-2">
+                                          <p className="text-sm text-rose-800">{String(ded.reason ?? '')}</p>
+                                          <span className="shrink-0 text-xs font-semibold text-rose-700">−{String(ded.penalty ?? 0)}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                          {pSample && (
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-1.5">Sample Answer</p>
+                              <div className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-3">
+                                <p className="text-sm text-violet-900 leading-relaxed whitespace-pre-wrap">{pSample}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+
+                    {/* Performance levels and Deductions — top-level questions */}
+                    {hasOwnRubric && (() => {
+                      const rubricId = String(q.canonical_question_id ?? label);
+                      const isEditingRubric = editingRubricId === rubricId;
+                      return (
+                        <div className="ml-10 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Rubric</p>
+                            {!isEditingRubric ? (
+                              <button type="button" onClick={() => startEditRubric(rubricId, perfLevels, deductions)}
+                                className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition">
+                                <Pencil className="h-3 w-3" /> Edit
+                              </button>
+                            ) : (
+                              <div className="flex items-center gap-1">
+                                <button type="button" disabled={rubricSaving} onClick={() => saveRubricEdits(q)}
+                                  className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-medium text-white transition hover:bg-emerald-700 disabled:opacity-60">
+                                  {rubricSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />} Save
+                                </button>
+                                <button type="button" onClick={() => { setEditingRubricId(null); setRubricEditMsg(null); }}
+                                  className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+                                  <X className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          {isEditingRubric ? (
+                            <div className="space-y-3">
+                              <div className="space-y-2">
+                                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Performance Levels</p>
+                                {rubricDraft.perfLevels.map((lv, li) => {
+                                  const { border } = bandColor(lv.level);
+                                  return (
+                                    <div key={li} className={`rounded-xl border p-3 space-y-2 ${border}`}>
+                                      <div className="flex items-center gap-2">
+                                        <input value={lv.level} onChange={e => setRubricDraft(d => { const pl = [...d.perfLevels]; pl[li] = {...pl[li], level: e.target.value}; return {...d, perfLevels: pl}; })}
+                                          className="w-32 rounded-lg border border-slate-200 px-2 py-1 text-xs outline-none focus:border-slate-400" placeholder="Band label" />
+                                        <input value={lv.score_range ?? ''} onChange={e => setRubricDraft(d => { const pl = [...d.perfLevels]; pl[li] = {...pl[li], score_range: e.target.value}; return {...d, perfLevels: pl}; })}
+                                          className="w-24 rounded-lg border border-slate-200 px-2 py-1 text-xs outline-none focus:border-slate-400" placeholder="Score range" />
+                                        <input value={lv.threshold ?? ''} onChange={e => setRubricDraft(d => { const pl = [...d.perfLevels]; pl[li] = {...pl[li], threshold: e.target.value}; return {...d, perfLevels: pl}; })}
+                                          className="w-20 rounded-lg border border-slate-200 px-2 py-1 text-xs outline-none focus:border-slate-400" placeholder="Threshold" />
+                                        <button type="button" onClick={() => setRubricDraft(d => ({ ...d, perfLevels: d.perfLevels.filter((_, i) => i !== li) }))}
+                                          className="ml-auto rounded p-1 text-slate-300 hover:bg-rose-50 hover:text-rose-500"><Trash2 className="h-3.5 w-3.5" /></button>
+                                      </div>
+                                      <textarea value={lv.description} onChange={e => { setRubricDraft(d => { const pl = [...d.perfLevels]; pl[li] = {...pl[li], description: e.target.value}; return {...d, perfLevels: pl}; }); }}
+                                        rows={2}
+                                        className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-slate-400" placeholder="Description…" />
+                                    </div>
+                                  );
+                                })}
+                                <button type="button" onClick={() => setRubricDraft(d => ({...d, perfLevels: [...d.perfLevels, {level: `Band ${d.perfLevels.length + 1}`, description: '', score_range: '', threshold: ''}]}))}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-dashed border-slate-300 px-3 py-1.5 text-xs text-slate-500 hover:border-slate-400 hover:text-slate-700 transition">
+                                  <Plus className="h-3 w-3" /> Add Level
+                                </button>
+                              </div>
+                              <div className="space-y-2">
+                                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Deductions</p>
+                                {rubricDraft.deductions.map((ded, di) => (
+                                  <div key={di} className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2">
+                                    <textarea value={ded.reason} onChange={e => { setRubricDraft(d => { const dd = [...d.deductions]; dd[di] = {...dd[di], reason: e.target.value}; return {...d, deductions: dd}; }); }}
+                                      rows={1}
+                                      className="flex-1 rounded-lg border border-rose-200 bg-white px-2 py-1 text-xs outline-none focus:border-rose-400" placeholder="Deduction reason…" />
+                                    <input type="number" step={0.5} value={ded.penalty} onChange={e => setRubricDraft(d => { const dd = [...d.deductions]; dd[di] = {...dd[di], penalty: Number(e.target.value)}; return {...d, deductions: dd}; })}
+                                      className="w-16 rounded-lg border border-rose-200 bg-white px-2 py-1 text-xs outline-none focus:border-rose-400" placeholder="−pts" />
+                                    <button type="button" onClick={() => setRubricDraft(d => ({ ...d, deductions: d.deductions.filter((_, i) => i !== di) }))}
+                                      className="rounded p-1 text-rose-300 hover:text-rose-600"><Trash2 className="h-3.5 w-3.5" /></button>
+                                  </div>
+                                ))}
+                                <button type="button" onClick={() => setRubricDraft(d => ({...d, deductions: [...d.deductions, {reason: '', penalty: 0}]}))}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-dashed border-rose-300 px-3 py-1.5 text-xs text-rose-500 hover:border-rose-400 hover:text-rose-700 transition">
+                                  <Plus className="h-3 w-3" /> Add Deduction
+                                </button>
+                              </div>
+                              {rubricEditMsg && <p className={`text-xs ${rubricEditMsg.ok ? 'text-emerald-600' : 'text-rose-600'}`}>{rubricEditMsg.text}</p>}
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              {perfLevels.map((lv, li) => {
                                 const rawLv = String(lv.level ?? `Band ${li + 1}`);
                                 const { pill, border } = bandColor(rawLv);
                                 return (
@@ -646,70 +907,21 @@ export default function SetupPage() {
                                   </div>
                                 );
                               })}
-                            </div>
-                          )}
-                          {pDed.length > 0 && (
-                            <div className="space-y-1.5">
-                              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Deductions</p>
-                              <div className="rounded-xl border border-rose-200 bg-rose-50 divide-y divide-rose-100">
-                                {pDed.map((ded, di) => (
-                                  <div key={di} className="flex items-center justify-between px-4 py-2.5 gap-2">
-                                    <p className="text-sm text-rose-800">{String(ded.reason ?? '')}</p>
-                                    <span className="shrink-0 text-xs font-semibold text-rose-700">−{String(ded.penalty ?? 0)}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {pSample && (
-                            <div>
-                              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-1.5">Sample Answer</p>
-                              <div className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-3">
-                                <p className="text-sm text-violet-900 leading-relaxed whitespace-pre-wrap">{pSample}</p>
-                              </div>
+                              {deductions.length > 0 && (
+                                <div className="rounded-xl border border-rose-200 bg-rose-50 divide-y divide-rose-100">
+                                  {deductions.map((ded, di) => (
+                                    <div key={di} className="flex items-center justify-between px-4 py-2.5 gap-2">
+                                      <p className="text-sm text-rose-800">{String(ded.reason ?? '')}</p>
+                                      <span className="shrink-0 text-xs font-semibold text-rose-700">−{String(ded.penalty ?? 0)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
                       );
-                    })}
-
-                    {/* Performance levels (questions without sub-parts) */}
-                    {hasOwnRubric && perfLevels.length > 0 && (
-                      <div className="ml-10 space-y-1.5">
-                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Performance Levels</p>
-                        {perfLevels.map((lv, li) => {
-                          const rawLv = String(lv.level ?? `Band ${li + 1}`);
-                          const { pill, border } = bandColor(rawLv);
-                          return (
-                            <div key={li} className={`rounded-xl border px-4 py-3 space-y-1.5 ${border}`}>
-                              <div className="flex items-center justify-between gap-2 flex-wrap">
-                                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${pill}`}>{rawLv}</span>
-                                <div className="flex items-center gap-3 text-xs text-slate-500">
-                                  {lv.score_range != null && <span className="font-semibold text-slate-700">{String(lv.score_range)}</span>}
-                                  {lv.threshold != null && <span>{String(lv.threshold)}</span>}
-                                </div>
-                              </div>
-                              {lv.description != null && <p className="text-sm text-slate-700 leading-relaxed">{String(lv.description)}</p>}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {/* Deductions */}
-                    {hasOwnRubric && deductions.length > 0 && (
-                      <div className="ml-10 space-y-1.5">
-                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Deductions</p>
-                        <div className="rounded-xl border border-rose-200 bg-rose-50 divide-y divide-rose-100">
-                          {deductions.map((ded, di) => (
-                            <div key={di} className="flex items-center justify-between px-4 py-2.5 gap-2">
-                              <p className="text-sm text-rose-800">{String(ded.reason ?? '')}</p>
-                              <span className="shrink-0 text-xs font-semibold text-rose-700">−{String(ded.penalty ?? 0)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    })()}
 
                     {/* Sample answer */}
                     {hasOwnRubric && sampleText && (

@@ -16,6 +16,22 @@ export type Submission = {
   is_finalized: boolean;
 };
 
+export type EvidenceItem = {
+  id: string;
+  label?: string;
+  text?: string;
+  source?: string;
+  page?: number;
+  score?: number;
+};
+
+export type Evaluation = {
+  llm?: string;
+  model?: string;
+  score?: number;
+  rationale?: string;
+};
+
 export type QuestionResult = {
   canonical_question_id: string;
   display_label?: string;
@@ -23,7 +39,8 @@ export type QuestionResult = {
   max_marks: number;
   raw_score_before_override?: number;
   needs_review?: boolean;
-  evaluations?: { score: number; rationale: string }[];
+  evaluations?: Evaluation[];
+  evidence_catalog?: EvidenceItem[];
 };
 
 export type GradingData = {

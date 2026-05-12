@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, Upload, X, FileText, Loader2, Lock, RefreshCw,
-  CheckCircle2, GraduationCap, Settings,
+  CheckCircle2, GraduationCap, Settings, Trash2,
 } from 'lucide-react';
 import { Submission, GradeFile } from '@/components/papers/types';
 import { normalizeStatus, isActive, StatusBadge } from '@/components/papers/StatusBadge';
@@ -181,6 +181,20 @@ export default function GradePage() {
 
   // ── Finalize ──────────────────────────────────────────────────────────────
   const [finalizing, setFinalizing] = React.useState<number | null>(null);
+  const [deletingId, setDeletingId] = React.useState<number | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = React.useState<number | null>(null);
+
+  const deleteSubmission = async (submissionId: number) => {
+    setDeletingId(submissionId);
+    try {
+      const res = await fetch(`/api/ag/delete-submission?submission_id=${submissionId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setSubmissions(prev => prev.filter(s => s.submission_id !== submissionId));
+        setConfirmDeleteId(null);
+      }
+    } catch { /* ignore */ }
+    finally { setDeletingId(null); }
+  };
 
   const finalizeSubmission = async (submissionId: number) => {
     setFinalizing(submissionId);
@@ -377,6 +391,24 @@ export default function GradePage() {
                             <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
                               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Done
                             </span>
+                          )}
+                          {/* Delete */}
+                          {confirmDeleteId === sub.submission_id ? (
+                            <div className="flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5">
+                              <span className="text-xs text-rose-700">Delete?</span>
+                              <button type="button" disabled={deletingId === sub.submission_id}
+                                onClick={() => deleteSubmission(sub.submission_id)}
+                                className="rounded px-2 py-0.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-60">
+                                {deletingId === sub.submission_id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Yes'}
+                              </button>
+                              <button type="button" onClick={() => setConfirmDeleteId(null)}
+                                className="rounded px-2 py-0.5 text-xs text-slate-500 hover:bg-slate-100">No</button>
+                            </div>
+                          ) : (
+                            <button type="button" onClick={() => setConfirmDeleteId(sub.submission_id)}
+                              className="rounded-lg p-1.5 text-slate-300 transition hover:bg-rose-50 hover:text-rose-500">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
                           )}
                         </div>
                       </td>

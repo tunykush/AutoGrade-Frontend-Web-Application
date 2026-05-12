@@ -199,7 +199,7 @@ export default function HomePage() {
   }, []);
  
   return (
-    <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: '#F8F5F0', color: '#23334A', fontFamily: 'Arial, Helvetica, sans-serif' }}>
+    <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: '#F8F5F0', color: '#23334A'}}>
  
       {/* ─── NAVBAR + HERO (single unified dark section) ─── */}
       <section style={{ position: 'relative', paddingBottom: '80px' }}>
