@@ -199,7 +199,7 @@ export default function PapersPage() {
 
   return (
     <main className="min-h-screen bg-[#f6f7f9] text-slate-900">
-      <Navbar variant="light" showConsultancy/>
+      <Navbar variant="light"/>
       <div className="px-6 py-8 md:px-10 space-y-8">
 
         {/* Page title */}

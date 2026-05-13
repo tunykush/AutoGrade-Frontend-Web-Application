@@ -6,11 +6,7 @@ import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 
 type NavbarProps = {
-  /** Use 'dark' (white text, transparent bg) for pages with dark/hero backgrounds.
-   *  Use 'light' (dark text, white bg) for interior app pages. */
   variant?: 'dark' | 'light';
-  /** Show the "Consultancy" scroll link (only relevant on the home page). */
-  showConsultancy?: boolean;
 };
 
 function getCookie(name: string): string | undefined {
@@ -21,34 +17,37 @@ function getCookie(name: string): string | undefined {
     ?.split('=')[1];
 }
 
-export default function Navbar({ variant = 'dark', showConsultancy = false }: NavbarProps) {
+export default function Navbar({ variant = 'dark' }: NavbarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Check cookie on mount, on pathname change, and when window regains focus
   const checkAuth = useCallback(() => {
     setIsLoggedIn(!!getCookie('is_logged_in'));
   }, []);
 
-  useEffect(() => {
-    checkAuth();
-  }, [pathname, checkAuth]);
-
+  useEffect(() => { checkAuth(); }, [pathname, checkAuth]);
   useEffect(() => {
     window.addEventListener('focus', checkAuth);
     return () => window.removeEventListener('focus', checkAuth);
   }, [checkAuth]);
 
   const handleLogout = useCallback(async () => {
-    try {
-      await fetch('/api/signout', { method: 'POST' });
-    } catch { /* ignore */ }
+    try { await fetch('/api/signout', { method: 'POST' }); } catch { /* ignore */ }
     setIsLoggedIn(false);
     setMenuOpen(false);
     router.push('/');
   }, [router]);
+
+  const handleConsultancy = useCallback(() => {
+    setMenuOpen(false);
+    if (pathname === '/') {
+      document.getElementById('consultancy')?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      router.push('/#consultancy');
+    }
+  }, [pathname, router]);
 
   const isDark = variant === 'dark';
   const textColor = isDark ? 'rgba(255,255,255,0.85)' : '#1e293b';
@@ -68,35 +67,26 @@ export default function Navbar({ variant = 'dark', showConsultancy = false }: Na
             alt="EdGenAI"
             width={60}
             height={60}
-            style={{ filter: isDark ? 'brightness(0) invert(1)' : 'brightness(0)' }}            unoptimized
+            style={{ filter: isDark ? 'brightness(0) invert(1)' : 'brightness(0)' }}
+            unoptimized
           />
         </Link>
 
         {/* Desktop nav */}
         <nav className="hidden md:flex gap-1 ml-6">
           <Link href="/papers" className={linkClass} style={{ color: textColor }}>AutoGrade</Link>
-          {showConsultancy && (
-            <button
-              onClick={() => document.getElementById('consultancy')?.scrollIntoView({ behavior: 'smooth' })}
-              className={linkClass}
-              style={{ color: textColor }}
-            >
-              Consultancy
-            </button>
-          )}
+          <button onClick={handleConsultancy} className={linkClass} style={{ color: textColor }}>
+            Consultancy
+          </button>
           <Link href="/about" className={linkClass} style={{ color: textColor }}>About Us</Link>
         </nav>
 
         {/* Desktop right side */}
         <div className="hidden md:flex ml-auto items-center gap-6">
           {isLoggedIn ? (
-            <button onClick={handleLogout} className={linkClass} style={{ color: textColor }}>
-              Log Out
-            </button>
+            <button onClick={handleLogout} className={linkClass} style={{ color: textColor }}>Log Out</button>
           ) : (
-            <Link href="/signin" className={linkClass} style={{ color: textColor }}>
-              Log In
-            </Link>
+            <Link href="/signin" className={linkClass} style={{ color: textColor }}>Log In</Link>
           )}
           <button
             className="w-full sm:w-auto px-8 py-3.5 rounded-full text-sm font-semibold cursor-pointer transition"
@@ -143,15 +133,11 @@ export default function Navbar({ variant = 'dark', showConsultancy = false }: Na
               className="px-4 py-3 text-sm font-medium rounded-xl" style={{ color: textColor }}>
               AutoGrade
             </Link>
-            {showConsultancy && (
-              <button
-                onClick={() => { document.getElementById('consultancy')?.scrollIntoView({ behavior: 'smooth' }); setMenuOpen(false); }}
-                className="px-4 py-3 text-sm font-medium rounded-xl text-left cursor-pointer"
-                style={{ color: textColor }}
-              >
-                Consultancy
-              </button>
-            )}
+            <button onClick={handleConsultancy}
+              className="px-4 py-3 text-sm font-medium rounded-xl text-left cursor-pointer"
+              style={{ color: textColor }}>
+              Consultancy
+            </button>
             <Link href="/about" onClick={() => setMenuOpen(false)}
               className="px-4 py-3 text-sm font-medium rounded-xl" style={{ color: textColor }}>
               About Us

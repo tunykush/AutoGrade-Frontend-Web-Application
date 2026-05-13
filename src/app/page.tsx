@@ -228,7 +228,7 @@ export default function HomePage() {
           background: 'linear-gradient(to bottom, transparent 0%, rgba(248,245,240,0.4) 40%, rgba(248,245,240,0.85) 70%, #F8F5F0 100%)',
           zIndex: 1,
         }} />
-        <Navbar variant="dark" showConsultancy />
+        <Navbar variant="dark"/>
  
         {/* Hero content */}
         <div className={`${CONTAINER} text-center pt-32 pb-8`} style={{ position: 'relative', zIndex: 10 }}>

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Submission, GradeFile } from '@/components/papers/types';
 import { normalizeStatus, isActive, StatusBadge } from '@/components/papers/StatusBadge';
+import Navbar from '@/components/ui/Navbar';
 
 function CircleProgress({ progress }: { progress: number }) {
   const r = 16;
@@ -216,8 +217,9 @@ export default function GradePage() {
   const successCount = submissions.filter((s) => s.validation_status === 'SUCCESS').length;
 
   return (
-    <main className="min-h-screen bg-[#f6f7f9] px-6 py-8 text-slate-900 md:px-10">
-      <div className="space-y-6">
+    <main className="min-h-screen bg-[#f6f7f9] text-slate-900">
+        <Navbar variant="light"/>
+        <div className="px-6 py-8 md:px-10 space-y-6">
 
         {/* Breadcrumb */}
         <div className="flex items-center gap-3">

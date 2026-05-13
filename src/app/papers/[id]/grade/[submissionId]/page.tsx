@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2, Lock, FileText, Trash2, LockOpen, BookOpen, X } from 'lucide-react';
 import { QuestionResult, GradingData, Override, Evaluation, EvidenceItem } from '@/components/papers/types';
 import { StatusBadge } from '@/components/papers/StatusBadge';
+import Navbar from '@/components/ui/Navbar';
 
 export default function ReviewPage() {
   const params = useParams();
@@ -153,8 +154,9 @@ export default function ReviewPage() {
   const totalMax = gradingData?.total_max ?? questions.reduce((a, q) => a + (q.max_marks ?? 0), 0);
 
   return (
-    <main className="min-h-screen bg-[#f6f7f9] px-6 py-8 text-slate-900 md:px-10">
-      <div className="space-y-6">
+    <main className="min-h-screen bg-[#f6f7f9] text-slate-900">
+        <Navbar variant="light"/>
+        <div className="px-6 py-8 md:px-10 space-y-6">
 
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm">

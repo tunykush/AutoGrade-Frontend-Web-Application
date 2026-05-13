@@ -12,6 +12,7 @@ import {
   Clock3,
 } from 'lucide-react';
 import GradingModal from '@/components/grading/GradingModal';
+import Navbar from '@/components/ui/Navbar';
 
 type UploadFile = {
   id: number;
@@ -324,6 +325,7 @@ export default function AutoGradeUploadPage() {
 
   return (
     <main className="min-h-screen bg-[#f6f7f9] px-4 py-8 text-slate-900 md:px-6 lg:px-8">
+      <Navbar variant="light"/>
       <div className="mx-auto max-w-5xl">
         <section className="rounded-[24px] bg-transparent p-4 md:p-6">
           <label

@@ -7,6 +7,7 @@ import {
   CheckCircle2, AlertCircle, Pencil, X, Plus, Trash2,
 } from 'lucide-react';
 import { normalizeStatus, isTerminal, isActive, StatusBadge } from '@/components/papers/StatusBadge';
+import Navbar from '@/components/ui/Navbar';
 
 function extractMsg(data: unknown, fallback: string): string {
   if (!data || typeof data !== 'object') return fallback;
@@ -478,8 +479,9 @@ export default function SetupPage() {
   const rubricActive = rubricStatus === 'PENDING' || rubricStatus === 'RUNNING';
 
   return (
-    <main className="min-h-screen bg-[#f6f7f9] px-6 py-8 text-slate-900 md:px-10">
-      <div className="space-y-6">
+    <main className="min-h-screen bg-[#f6f7f9] text-slate-900">
+      <Navbar variant="light"/>
+      <div className="px-6 py-8 md:px-10 space-y-6">
 
         {/* Breadcrumb + header */}
         <div className="flex items-center gap-3">
