@@ -11,6 +11,7 @@ import Testimonial from '@/components/sections/Testimonial';
 import FAQItem from '@/components/sections/FAQItem';
 import { NeatGradient } from '@firecms/neat';
 import Navbar from '@/components/ui/Navbar';
+import FluidCursor from '@/components/ui/FluidCursor';
  
 // Single source of truth for horizontal padding
 const CONTAINER = "max-w-[1200px] mx-auto px-6 md:px-10";
@@ -71,6 +72,15 @@ const glassStyle: React.CSSProperties = {
   overflowX: 'hidden',
 };
  
+// Only show fluid cursor on non-touch devices
+function useIsTouchDevice() {
+  const [isTouch, setIsTouch] = useState(false);
+  useEffect(() => {
+    setIsTouch('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  }, []);
+  return isTouch;
+}
+
 export default function HomePage() {
   const exploreItems = [
     {
@@ -198,8 +208,12 @@ export default function HomePage() {
     };
   }, []);
  
+  const isTouch = useIsTouchDevice();
+
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: '#F8F5F0', color: '#23334A'}}>
+      {/* Fluid glass cursor effect — desktop only */}
+      {!isTouch && <FluidCursor />}
  
       {/* ─── NAVBAR + HERO (single unified dark section) ─── */}
       <section style={{ position: 'relative', paddingBottom: '80px' }}>
