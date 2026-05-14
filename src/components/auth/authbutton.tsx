@@ -9,7 +9,7 @@ export default function authbutton({
   return (
     <button
       {...props}
-      className="mt-2 h-[54px] w-full rounded-xl bg-[linear-gradient(180deg,#4d4f5c_0%,#2f313a_100%)] px-4 text-[15px] font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_2px_8px_rgba(0,0,0,0.12)] transition hover:brightness-105"
+      className="mt-2 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#1f2937_0%,#38465d_48%,#111827_100%)] px-4 text-[15px] font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_12px_28px_rgba(17,24,39,0.24)] transition hover:-translate-y-0.5 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
     >
       <span className="inline-flex items-center gap-2">
         {children}
