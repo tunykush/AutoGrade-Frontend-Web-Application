@@ -267,7 +267,7 @@ export default function GradePage() {
         </div>
 
         {/* Right: Upload zone */}
-        <div>
+        <div data-guide="grade-upload">
           <p className="mb-2 text-sm font-semibold text-slate-700">Upload Answer Sheets</p>
           <label
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
@@ -321,7 +321,7 @@ export default function GradePage() {
         </div>{/* end stats+upload grid */}
 
         {/* Submissions table */}
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div data-guide="grade-submissions" className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <h2 className="text-base font-semibold text-slate-900">Submissions</h2>
             <button onClick={loadSubmissions} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700" title="Refresh">
