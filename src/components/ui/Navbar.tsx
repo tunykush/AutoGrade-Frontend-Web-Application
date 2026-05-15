@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
@@ -21,7 +21,9 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [userDropOpen, setUserDropOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const dropRef = useRef<HTMLDivElement>(null);
 
   const checkAuth = useCallback(() => {
     setIsLoggedIn(!!getCookie('is_logged_in'));
@@ -33,10 +35,22 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
     return () => window.removeEventListener('focus', checkAuth);
   }, [checkAuth]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropRef.current && !dropRef.current.contains(e.target as Node)) {
+        setUserDropOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
   const handleLogout = useCallback(async () => {
     try { await fetch('/api/signout', { method: 'POST' }); } catch { /* ignore */ }
     setIsLoggedIn(false);
     setMenuOpen(false);
+    setUserDropOpen(false);
     router.push('/');
   }, [router]);
 
@@ -84,10 +98,48 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
         {/* Desktop right side */}
         <div className="hidden md:flex ml-auto items-center gap-6">
           {isLoggedIn ? (
-            <button onClick={handleLogout} className={linkClass} style={{ color: textColor }}>Log Out</button>
+            /* User dropdown */
+            <div className="relative" ref={dropRef}>
+              <button
+                onClick={() => setUserDropOpen(p => !p)}
+                className={`${linkClass} flex items-center gap-1.5`}
+                style={{ color: textColor }}
+              >
+                Account
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ opacity: 0.6, transition: 'transform 0.2s', transform: userDropOpen ? 'rotate(180deg)' : 'none' }}>
+                  <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+
+              {userDropOpen && (
+                <div className="absolute right-0 top-full mt-2 w-48 rounded-2xl overflow-hidden shadow-xl"
+                  style={{ background: 'white', border: '1px solid #e2e8f0' }}>
+                  <Link href="/account"
+                    onClick={() => setUserDropOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                      <circle cx="7.5" cy="5" r="3" stroke="#64748b" strokeWidth="1.3" />
+                      <path d="M1.5 13.5c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="#64748b" strokeWidth="1.3" strokeLinecap="round" />
+                    </svg>
+                    Account Settings
+                  </Link>
+                  <div style={{ height: '1px', background: '#f1f5f9', margin: '0 12px' }} />
+                  <button onClick={handleLogout}
+                    className="flex w-full items-center gap-2.5 px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50 transition">
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                      <path d="M5.5 2H3a1 1 0 00-1 1v9a1 1 0 001 1h2.5" stroke="#e11d48" strokeWidth="1.3" strokeLinecap="round" />
+                      <path d="M10 10l3-2.5L10 5" stroke="#e11d48" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                      <line x1="13" y1="7.5" x2="6" y2="7.5" stroke="#e11d48" strokeWidth="1.3" strokeLinecap="round" />
+                    </svg>
+                    Log Out
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
             <Link href="/signin" className={linkClass} style={{ color: textColor }}>Log In</Link>
           )}
+
           <button
             className="w-full sm:w-auto px-8 py-3.5 rounded-full text-sm font-semibold cursor-pointer transition"
             style={isDark
@@ -144,10 +196,16 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
             </Link>
             <div style={{ height: '1px', backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#f1f5f9', margin: '4px 16px' }} />
             {isLoggedIn ? (
-              <button onClick={handleLogout}
-                className="px-4 py-3 text-sm font-medium rounded-xl text-left" style={{ color: textColor }}>
-                Log Out
-              </button>
+              <>
+                <Link href="/account" onClick={() => setMenuOpen(false)}
+                  className="px-4 py-3 text-sm font-medium rounded-xl" style={{ color: textColor }}>
+                  Account Settings
+                </Link>
+                <button onClick={handleLogout}
+                  className="px-4 py-3 text-sm font-medium rounded-xl text-left text-rose-500">
+                  Log Out
+                </button>
+              </>
             ) : (
               <Link href="/signin" onClick={() => setMenuOpen(false)}
                 className="px-4 py-3 text-sm font-medium rounded-xl" style={{ color: textColor }}>

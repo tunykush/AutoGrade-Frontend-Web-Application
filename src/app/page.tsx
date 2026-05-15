@@ -2,12 +2,7 @@
 import Link from 'next/link';
 import { useState, useEffect, useRef } from "react";
 import Image from 'next/image';
-import FeatureCard from '@/components/ui/FeatureCard';
 import ProgressBar from '@/components/ui/ProgressBar';
-import StatCard from '@/components/ui/StatCard';
-import SummaryItem from '@/components/ui/SummaryItem';
-import Step from '@/components/sections/Step';
-import Testimonial from '@/components/sections/Testimonial';
 import FAQItem from '@/components/sections/FAQItem';
 import { NeatGradient } from '@firecms/neat';
 import Navbar from '@/components/ui/Navbar';

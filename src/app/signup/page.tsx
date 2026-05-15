@@ -76,9 +76,9 @@ export default function SignUpPage() {
 
       <form onSubmit={handleSubmit}>
         <AuthInput
-          label="Name"
+          label="Username"
           type="text"
-          placeholder="Enter your full name"
+          placeholder="Enter your username"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
