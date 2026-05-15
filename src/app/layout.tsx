@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Instrument_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import MinimalGuide from "@/components/ui/MinimalGuide";
 
 const instrument = Instrument_Sans({
   subsets: ["latin"],
@@ -23,6 +24,7 @@ export default function RootLayout({
       <body className={`${instrument.className} min-h-full flex flex-col`}>
         <AuthProvider>
           {children}
+          <MinimalGuide />
         </AuthProvider>
       </body>
     </html>

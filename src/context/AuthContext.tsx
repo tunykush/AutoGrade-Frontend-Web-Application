@@ -2,7 +2,7 @@
 
 import { createContext, useContext } from 'react';
 
-const AuthContext = createContext(null);
+const AuthContext = createContext<Record<string, unknown> | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   return (

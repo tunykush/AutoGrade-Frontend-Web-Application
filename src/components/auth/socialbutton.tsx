@@ -12,10 +12,10 @@ export default function socialbutton({
   return (
     <button
       type="button"
-      className="relative mb-3 flex h-[52px] w-full items-center justify-center rounded-xl border border-black/10 bg-white px-4 text-[15px] font-medium text-[#444854] transition hover:bg-[#fafafa]"
+      className="relative mb-3 flex h-12 w-full items-center justify-center rounded-2xl border border-[#dbe3ef] bg-white/68 px-4 text-[14px] font-medium text-[#3f4655] shadow-[0_1px_0_rgba(255,255,255,0.8)] transition hover:-translate-y-0.5 hover:border-[#bfd2ee] hover:bg-white"
     >
       {badge ? (
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full border border-black/8 bg-[#f3f3f3] px-3 py-1 text-[12px] text-[#7a7d87]">
+        <span className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-full border border-[#dbe3ef] bg-[#f5f8fc] px-2.5 py-1 text-[11px] text-[#7a8495] sm:inline-flex">
           {badge}
         </span>
       ) : null}

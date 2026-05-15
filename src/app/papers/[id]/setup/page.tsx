@@ -517,7 +517,7 @@ export default function SetupPage() {
         <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[1fr_400px]">
 
         {/* Step 1: Extracted Questions */}
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div data-guide="setup-questions" className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
           <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4">
             <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
               masterEntries.length > 0 ? 'bg-emerald-500 text-white' : 'bg-slate-900 text-white'
@@ -945,7 +945,7 @@ export default function SetupPage() {
         <div className="space-y-6">
 
         {/* Step 2: Rubric */}
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div data-guide="setup-rubric" className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <div className="flex items-center gap-3">
               <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
@@ -1026,7 +1026,7 @@ export default function SetupPage() {
         </div>
 
         {/* Step 2: Sample Answer */}
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div data-guide="setup-sample" className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <div className="flex items-center gap-3">
               <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
@@ -1106,7 +1106,7 @@ export default function SetupPage() {
         </div>
 
         {/* CTA: Go to Grade */}
-        <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-6 py-4">
+        <div data-guide="setup-start-grading" className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-6 py-4">
           <div>
             <p className="font-semibold text-slate-900">Ready to grade?</p>
             <p className="text-sm text-slate-500">Upload student submissions and start auto-grading</p>

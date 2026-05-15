@@ -4,13 +4,13 @@ type AuthInputProps = React.InputHTMLAttributes<HTMLInputElement> & {
 
 export default function authinput({ label, ...props }: AuthInputProps) {
   return (
-    <div className="mb-5">
-      <label className="mb-3 block text-[15px] font-medium text-[#111111]">
+    <div className="mb-4">
+      <label className="mb-2 block text-[14px] font-medium text-[#1b2433]">
         {label}
       </label>
       <input
         {...props}
-        className="h-[52px] w-full rounded-xl border border-black/12 bg-white px-4 text-[16px] text-[#111111] outline-none transition placeholder:text-[#b1b4bf] focus:border-[#8f94a3] focus:ring-2 focus:ring-black/5"
+        className="h-12 w-full rounded-2xl border border-[#d7dfeb] bg-white/72 px-4 text-[15px] text-[#111827] outline-none transition placeholder:text-[#a8b0c0] focus:border-[#60a5fa] focus:bg-white focus:ring-4 focus:ring-[#60a5fa]/15"
       />
     </div>
   )
