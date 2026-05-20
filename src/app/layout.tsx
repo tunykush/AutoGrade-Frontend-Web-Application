@@ -24,7 +24,7 @@ export default function RootLayout({
       <body className={`${instrument.className} min-h-full flex flex-col`}>
         <AuthProvider>
           {children}
-          <MinimalGuide />
+          <MinimalGuide/>
         </AuthProvider>
       </body>
     </html>

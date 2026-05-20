@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import AuthLayout from '@/components/auth/authlayout'
 import AuthInput from '@/components/auth/authinput'
 import AuthButton from '@/components/auth/authbutton'
@@ -35,6 +35,12 @@ export default function SignUpPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (document.cookie.includes('is_logged_in')) {
+      router.replace('/account');
+    }
+  }, [router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

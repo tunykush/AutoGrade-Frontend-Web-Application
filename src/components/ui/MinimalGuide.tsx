@@ -18,40 +18,7 @@ type TargetBox = {
   height: number;
 };
 
-const DEFAULT_STEPS: GuideStep[] = [
-  {
-    eyebrow: 'Start here',
-    title: 'Use the top navigation',
-    body: 'Move between AutoGrade, About, and account actions from the header. Key actions stay near the main content area.',
-    target: 'body',
-  },
-  {
-    eyebrow: 'Tip',
-    title: 'Follow the primary button',
-    body: 'Each page keeps the next important action visually prominent, so you can progress without reading every control.',
-    target: 'body',
-  },
-];
-
 const GUIDE_BY_ROUTE: { match: (path: string) => boolean; key: string; steps: GuideStep[] }[] = [
-  {
-    key: 'home',
-    match: (path) => path === '/' || path === '/homepage',
-    steps: [
-      {
-        eyebrow: 'Welcome',
-        title: 'Explore EdGenAI',
-        body: 'Scroll through the sections to understand how AutoGrade helps transform exam papers into grading workflows.',
-        target: 'body',
-      },
-      {
-        eyebrow: 'Next step',
-        title: 'Open AutoGrade',
-        body: 'Use the AutoGrade link in the navigation when you are ready to upload a paper and begin setup.',
-        target: 'body',
-      },
-    ],
-  },
   {
     key: 'papers',
     match: (path) => path === '/papers',
@@ -141,58 +108,34 @@ const GUIDE_BY_ROUTE: { match: (path: string) => boolean; key: string; steps: Gu
         target: 'body',
       },
     ],
-  },
-  {
-    key: 'auth',
-    match: (path) => ['/signin', '/signup', '/reset-password'].includes(path),
-    steps: [
-      {
-        eyebrow: 'Account',
-        title: 'Sign in to continue',
-        body: 'Use your EdGenAI account to access saved papers, grading history, and secure upload features.',
-        target: 'body',
-      },
-    ],
-  },
-  {
-    key: 'info',
-    match: (path) => ['/about', '/contact', '/waitlist'].includes(path),
-    steps: [
-      {
-        eyebrow: 'Info',
-        title: 'Learn more or reach out',
-        body: 'This page is informational. Use the forms or navigation links when you are ready to connect or return to AutoGrade.',
-        target: 'body',
-      },
-    ],
-  },
+  }
 ];
 
 function getRouteGuide(pathname: string) {
-  return GUIDE_BY_ROUTE.find((guide) => guide.match(pathname)) ?? {
-    key: 'default',
-    steps: DEFAULT_STEPS,
-  };
+  return GUIDE_BY_ROUTE.find((guide) => guide.match(pathname)) ?? null;
 }
 
 export default function MinimalGuide() {
   const pathname = usePathname();
   const guide = React.useMemo(() => getRouteGuide(pathname), [pathname]);
-  const storageKey = `minimal-guide:${guide.key}:v1`;
+  const storageKey = `minimal-guide:${guide?.key ?? 'none'}:v1`;
+  const [mounted, setMounted] = React.useState(false);
   const [open, setOpen] = React.useState(false);
   const [stepIndex, setStepIndex] = React.useState(0);
   const [targetBox, setTargetBox] = React.useState<TargetBox | null>(null);
 
   React.useEffect(() => {
-    setStepIndex(0);
-    const timer = window.setTimeout(() => {
-      setOpen(localStorage.getItem(storageKey) !== 'dismissed');
-    }, 500);
-    return () => window.clearTimeout(timer);
-  }, [storageKey]);
+    setMounted(true);
+  }, []);
 
-  const step = guide.steps[stepIndex];
-  const isLast = stepIndex === guide.steps.length - 1;
+  React.useEffect(() => {
+    if (!mounted) return;
+    setStepIndex(0);
+    setOpen(localStorage.getItem(storageKey) !== 'dismissed');
+  }, [storageKey, mounted]);
+
+  const step = guide?.steps[stepIndex] ?? null;
+  const isLast = stepIndex === (guide?.steps.length ?? 1) - 1;
 
   React.useEffect(() => {
     if (!open || !step) return;
@@ -238,7 +181,8 @@ export default function MinimalGuide() {
     setOpen(false);
   }, [storageKey]);
 
-  if (!open || !step) return null;
+  const HIDDEN_ROUTES = ['/', '/about', '/signin', '/signup'];
+  if (!mounted || HIDDEN_ROUTES.includes(pathname) || !guide || !open || !step) return null;
 
   const isAnchored = Boolean(targetBox && step.target !== 'body');
   const popoverStyle = getPopoverStyle(targetBox);
@@ -285,7 +229,7 @@ export default function MinimalGuide() {
 
         <div className="mt-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-1.5" aria-hidden="true">
-            {guide.steps.map((_, index) => (
+            {(guide?.steps ?? []).map((_, index) => (
               <span
                 key={index}
                 className={`h-1.5 rounded-full transition-all ${index === stepIndex ? 'w-5 bg-slate-950' : 'w-1.5 bg-slate-300'}`}

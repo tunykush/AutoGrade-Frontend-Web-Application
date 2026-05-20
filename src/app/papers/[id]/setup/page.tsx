@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, Upload, Loader2, Lock, BookOpen, ChevronRight,
-  CheckCircle2, AlertCircle, Pencil, X, Plus, Trash2,
+  CheckCircle2, AlertCircle, Pencil, X, Plus, Trash2, ImageIcon,
 } from 'lucide-react';
 import { normalizeStatus, isTerminal, isActive, StatusBadge } from '@/components/papers/StatusBadge';
 import Navbar from '@/components/ui/Navbar';
@@ -257,6 +257,103 @@ export default function SetupPage() {
       setEditMsg({ ok: false, text: err instanceof Error ? err.message : 'Save failed' });
     } finally {
       setEditSaving(false);
+    }
+  };
+
+
+  // ── Add question state ────────────────────────────────────────────────────
+  type NewSubPart = { label: string; text: string; max_marks: number };
+  type NewQuestion = {
+    text: string;
+    max_marks: number;
+    imageFile: File | null;
+    imagePreview: string | null;
+    subParts: NewSubPart[];
+  };
+  const emptyQuestion = (): NewQuestion => ({
+    text: '', max_marks: 0, imageFile: null, imagePreview: null, subParts: [],
+  });
+  const [addingQuestion, setAddingQuestion] = React.useState(false);
+  const [newQ, setNewQ] = React.useState<NewQuestion>(emptyQuestion());
+  const [addQSaving, setAddQSaving] = React.useState(false);
+  const [addQMsg, setAddQMsg] = React.useState<{ ok: boolean; text: string } | null>(null);
+  const imageInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleImageSelect = (file: File) => {
+    const preview = URL.createObjectURL(file);
+    setNewQ(q => ({ ...q, imageFile: file, imagePreview: preview }));
+  };
+
+  const addSubPart = () =>
+    setNewQ(q => ({ ...q, subParts: [...q.subParts, { label: '', text: '', max_marks: 0 }] }));
+
+  const updateSubPart = (i: number, field: keyof NewSubPart, val: string | number) =>
+    setNewQ(q => { const parts = [...q.subParts]; parts[i] = { ...parts[i], [field]: val }; return { ...q, subParts: parts }; });
+
+  const removeSubPart = (i: number) =>
+    setNewQ(q => ({ ...q, subParts: q.subParts.filter((_, idx) => idx !== i) }));
+
+  const saveNewQuestion = async () => {
+    if (!newQ.text.trim() && !newQ.imageFile && newQ.subParts.length === 0) {
+      return setAddQMsg({ ok: false, text: 'Add question text, an image, or at least one sub-question.' });
+    }
+    setAddQSaving(true);
+    setAddQMsg(null);
+    try {
+      const nextId = String(masterEntries.length + 1);
+      const parts = newQ.subParts.length > 0
+        ? newQ.subParts.map((sp, i) => ({
+            canonical_question_id: `${nextId}.${String.fromCharCode(97 + i)}`,
+            display_label: sp.label || `Q${nextId}(${String.fromCharCode(97 + i)})`,
+            max_marks: sp.max_marks,
+            question_content: { text: sp.text },
+          }))
+        : [];
+
+      const payload: Record<string, unknown> = {
+        paper_id: paperId,
+        canonical_question_id: nextId,
+        display_label: `Q${nextId}`,
+        max_marks: newQ.max_marks,
+        question_content: { text: newQ.text },
+        parts,
+      };
+
+      // If image, upload as FormData
+      let res: Response;
+      if (newQ.imageFile) {
+        const fd = new FormData();
+        fd.append('file', newQ.imageFile);
+        fd.append('data', JSON.stringify(payload));
+        res = await fetch('/api/qh/add-question', { method: 'POST', body: fd });
+      } else {
+        res = await fetch('/api/qh/add-question', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      }
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error ?? data?.message ?? 'Failed to add question');
+
+      // Update local state optimistically
+      setMasterData(prev => {
+        if (!prev) return prev;
+        const qs = Array.isArray((prev as QRec).questions)
+          ? [...((prev as QRec).questions as QRec[])]
+          : [];
+        qs.push({ ...payload, parts } as QRec);
+        return { ...(prev as QRec), questions: qs } as Record<string, unknown>;
+      });
+
+      setAddQMsg({ ok: true, text: 'Question added successfully.' });
+      setNewQ(emptyQuestion());
+      setAddingQuestion(false);
+    } catch (err) {
+      setAddQMsg({ ok: false, text: err instanceof Error ? err.message : 'Failed to add question' });
+    } finally {
+      setAddQSaving(false);
     }
   };
 
@@ -937,6 +1034,145 @@ export default function SetupPage() {
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* Add Question panel */}
+          {paperStatus === 'SUCCESS' && (
+            <div className="border-t border-slate-100 px-5 py-4">
+              {!addingQuestion ? (
+                <button
+                  type="button"
+                  onClick={() => { setAddingQuestion(true); setAddQMsg(null); }}
+                  className="inline-flex items-center gap-2 rounded-xl border border-dashed border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-500 hover:border-slate-400 hover:text-slate-700 transition w-full justify-center"
+                >
+                  <Plus className="h-4 w-4" /> Add Question
+                </button>
+              ) : (
+                <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-slate-800">New Question</p>
+                    <button type="button" onClick={() => { setAddingQuestion(false); setNewQ(emptyQuestion()); setAddQMsg(null); }}
+                      className="rounded-lg p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-600">
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {/* Question text */}
+                  <div>
+                    <label className="mb-1.5 block text-xs font-medium text-slate-600">Question text</label>
+                    <textarea
+                      value={newQ.text}
+                      onChange={e => setNewQ(q => ({ ...q, text: e.target.value }))}
+                      rows={2}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 resize-y"
+                      placeholder="Enter question text…"
+                    />
+                  </div>
+
+                  {/* Max marks */}
+                  <div className="flex items-center gap-3">
+                    <label className="text-xs font-medium text-slate-600 shrink-0">Max marks</label>
+                    <input
+                      type="number" min={0} step={0.5}
+                      value={newQ.max_marks}
+                      onChange={e => setNewQ(q => ({ ...q, max_marks: Number(e.target.value) }))}
+                      className="w-24 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-slate-400"
+                    />
+                  </div>
+
+                  {/* Image upload */}
+                  <div>
+                    <label className="mb-1.5 block text-xs font-medium text-slate-600">Image (optional)</label>
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={e => { const f = e.target.files?.[0]; if (f) handleImageSelect(f); }}
+                    />
+                    {newQ.imagePreview ? (
+                      <div className="relative inline-block">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={newQ.imagePreview} alt="Preview" className="max-h-40 rounded-xl border border-slate-200 object-contain" />
+                        <button type="button"
+                          onClick={() => setNewQ(q => ({ ...q, imageFile: null, imagePreview: null }))}
+                          className="absolute -top-2 -right-2 rounded-full bg-rose-500 p-0.5 text-white hover:bg-rose-600">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button type="button" onClick={() => imageInputRef.current?.click()}
+                        className="inline-flex items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-500 hover:border-slate-400 hover:text-slate-700 transition">
+                        <ImageIcon className="h-4 w-4" /> Attach image
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Sub-questions */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-medium text-slate-600">Sub-questions (optional)</label>
+                      <button type="button" onClick={addSubPart}
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition">
+                        <Plus className="h-3 w-3" /> Add sub-question
+                      </button>
+                    </div>
+                    {newQ.subParts.length === 0 ? (
+                      <p className="text-xs text-slate-400 italic">No sub-questions yet.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {newQ.subParts.map((sp, i) => (
+                          <div key={i} className="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
+                            <div className="flex items-center gap-2">
+                              <input
+                                value={sp.label}
+                                onChange={e => updateSubPart(i, 'label', e.target.value)}
+                                placeholder={`Label (e.g. Q1(a))`}
+                                className="flex-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs outline-none focus:border-slate-400"
+                              />
+                              <input
+                                type="number" min={0} step={0.5}
+                                value={sp.max_marks}
+                                onChange={e => updateSubPart(i, 'max_marks', Number(e.target.value))}
+                                placeholder="Marks"
+                                className="w-20 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs outline-none focus:border-slate-400"
+                              />
+                              <button type="button" onClick={() => removeSubPart(i)}
+                                className="rounded p-1 text-slate-300 hover:text-rose-500">
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                            <textarea
+                              value={sp.text}
+                              onChange={e => updateSubPart(i, 'text', e.target.value)}
+                              rows={2}
+                              placeholder="Sub-question text…"
+                              className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs outline-none focus:border-slate-400 resize-y"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {addQMsg && (
+                    <p className={`text-xs font-medium ${addQMsg.ok ? 'text-emerald-600' : 'text-rose-600'}`}>{addQMsg.text}</p>
+                  )}
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <button type="button" disabled={addQSaving} onClick={saveNewQuestion}
+                      className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60">
+                      {addQSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                      Save Question
+                    </button>
+                    <button type="button" onClick={() => { setAddingQuestion(false); setNewQ(emptyQuestion()); setAddQMsg(null); }}
+                      className="rounded-xl px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
