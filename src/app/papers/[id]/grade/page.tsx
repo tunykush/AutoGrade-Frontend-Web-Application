@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, Upload, X, FileText, Loader2, Lock, RefreshCw,
-  CheckCircle2, GraduationCap, Settings, Trash2,
+  CheckCircle2, GraduationCap, Settings, Trash2, Download,
 } from 'lucide-react';
 import { Submission, GradeFile } from '@/components/papers/types';
 import { normalizeStatus, isActive, StatusBadge } from '@/components/papers/StatusBadge';
@@ -213,215 +213,300 @@ export default function GradePage() {
     finally { setFinalizing(null); }
   };
 
+  const handleExportCSV = () => {
+    try {
+      if (submissions.length === 0) {
+        alert('No submissions available to export.');
+        return;
+      }
+
+      const csvData = submissions.map((sub) => ({
+        Student: `"${sub.student_id ?? `Submission #${sub.submission_id}`}"`,
+        "Submission ID": `"${sub.submission_id}"`,
+        Status: `"${sub.validation_status}"`,
+        Score:
+          sub.total_score !== null && sub.max_score !== null
+            ? `"${sub.total_score} / ${sub.max_score}"`
+            : sub.total_score !== null
+            ? `"${sub.total_score}"`
+            : `"—"`,
+        Finalized: `"${sub.is_finalized ? 'Yes' : 'No'}"`,
+      }));
+
+      const csv = [
+        Object.keys(csvData[0]).join(','),
+        ...csvData.map((row) => Object.values(row).join(',')),
+      ].join('\n');
+
+      const blob = new Blob([csv], {
+        type: 'text/csv;charset=utf-8;',
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+
+      link.href = url;
+      link.download = `${paperName.replace(/\s+/g, '_')}_submissions.csv`;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('CSV export failed:', error);
+      alert('Failed to export CSV');
+    }
+  };
+
   const finalizedCount = submissions.filter((s) => s.validation_status === 'FINALIZED').length;
   const successCount = submissions.filter((s) => s.validation_status === 'SUCCESS').length;
 
   return (
-    <main className="min-h-screen bg-[#f6f7f9] text-slate-900">
-        <Navbar variant="light"/>
-        <div className="px-6 py-8 md:px-10 space-y-6">
+    <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl" />
+      </div>
+      
+      <div className="relative z-10">
+        <Navbar variant="light" />
+        <div className="px-6 py-8 md:px-12 space-y-10">
 
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push('/papers')}
-            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-slate-500 hover:bg-white hover:text-slate-900 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" /> Papers
-          </button>
-          <span className="text-slate-300">/</span>
-          <span className="text-sm font-medium text-slate-700 truncate">{paperName}</span>
-          <span className="text-slate-300">/</span>
-          <span className="text-sm font-semibold text-slate-900">Grade</span>
-        </div>
-
-        {/* Page header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Grade Submissions</h1>
-            <p className="mt-0.5 text-sm text-slate-500">Upload student answer sheets and review AI grading</p>
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2.5 text-sm">
+            <button
+              onClick={() => router.push('/papers')}
+              className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-slate-400 hover:bg-slate-700/40 hover:text-slate-200 transition-colors duration-150"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" /> Papers
+            </button>
+            <span className="text-slate-500">/</span>
+            <span className="font-medium text-slate-300 truncate">{paperName}</span>
+            <span className="text-slate-500">/</span>
+            <span className="font-semibold text-white">Grade</span>
           </div>
-          <button
-            onClick={() => router.push(`/papers/${paperId}/setup`)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:bg-slate-50"
-          >
-            <Settings className="h-4 w-4" /> Setup
-          </button>
-        </div>
 
-        {/* Stats + Upload — side by side on wide screens */}
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_420px]">
-
-        {/* Left: Stats */}
-        <div className="grid grid-cols-3 gap-3 content-start">
-          {[
-            { label: 'Total', value: submissions.length, color: 'text-slate-900' },
-            { label: 'Ready to review', value: successCount, color: 'text-sky-700' },
-            { label: 'Finalized', value: finalizedCount, color: 'text-violet-700' },
-          ].map((stat) => (
-            <div key={stat.label} className="rounded-2xl border border-slate-200 bg-white px-5 py-4">
-              <p className="text-xs text-slate-500">{stat.label}</p>
-              <p className={`text-2xl font-bold tabular-nums ${stat.color}`}>{stat.value}</p>
+          {/* Page header with actions */}
+          <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+            <div className="flex-1">
+              <h1 className="text-5xl font-bold text-white tracking-tight leading-tight">Grade Submissions</h1>
+              <p className="mt-4 text-lg text-slate-300 max-w-xl">Upload student answer sheets and review AI-powered grading results instantly</p>
             </div>
-          ))}
-        </div>
-
-        {/* Right: Upload zone */}
-        <div data-guide="grade-upload">
-          <p className="mb-2 text-sm font-semibold text-slate-700">Upload Answer Sheets</p>
-          <label
-            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={(e) => { e.preventDefault(); setIsDragging(false); handleUpload(e.dataTransfer.files); }}
-            className={`block cursor-pointer rounded-2xl border-2 border-dashed px-6 py-10 text-center transition-colors ${
-              isDragging ? 'border-slate-400 bg-white' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
-            }`}
-          >
-            <div className="flex flex-col items-center gap-2">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
-                <Upload className="h-5 w-5 text-slate-500" />
-              </div>
-              <p className="text-sm font-medium text-slate-700">Drop student answer sheets here</p>
-              <p className="text-xs text-slate-400">PDF / DOCX · up to 20 files · 5 MB each</p>
+            <div className="flex items-center gap-2">
               <button
-                type="button"
-                onClick={(e) => { e.preventDefault(); fileInputRef.current?.click(); }}
-                className="mt-1 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+                onClick={handleExportCSV}
+                disabled={submissions.length === 0}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-800/40 backdrop-blur-sm px-4 py-2.5 text-sm font-semibold text-slate-200 shadow-lg hover:shadow-xl hover:bg-slate-700/40 hover:border-slate-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-lg disabled:hover:bg-slate-800/40 transition-all duration-200"
+                title={submissions.length === 0 ? 'No submissions to export' : 'Export submissions as CSV'}
               >
-                Browse files
+                <Download className="h-4 w-4" />
+                Export
+              </button>
+              <button
+                onClick={() => router.push(`/papers/${paperId}/setup`)}
+                className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200"
+              >
+                <Settings className="h-4 w-4" />
+                Setup
               </button>
             </div>
-            <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" multiple className="hidden" onChange={(e) => handleUpload(e.target.files)} />
-          </label>
+          </div>
 
-          {gradeFiles.length > 0 && (
-            <div className="mt-2 space-y-2">
-              {gradeFiles.map((f) => (
-                <div key={f.id} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2.5">
-                  <div className="relative flex h-9 w-9 shrink-0 items-center justify-center">
-                    <CircleProgress progress={f.progress} />
-                    <Upload className="absolute h-3 w-3 text-slate-500" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-slate-800">{f.file.name}</p>
-                    <p className="text-xs text-slate-400">
-                      {f.error ? <span className="text-rose-500">{f.error}</span>
-                        : f.done ? <span className="text-emerald-600">Uploaded · grading in progress</span>
-                        : `Uploading ${f.progress}%`}
+          {/* Stats + Upload — side by side on wide screens */}
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_420px]">
+
+            {/* Left: Stats */}
+            <div className="grid grid-cols-3 gap-4 content-start">
+              {[
+                { label: 'Total Submissions', value: submissions.length, borderColor: 'from-blue-500/20 to-transparent' },
+                { label: 'Ready to Review', value: successCount, borderColor: 'from-sky-500/20 to-transparent' },
+                { label: 'Finalized', value: finalizedCount, borderColor: 'from-emerald-500/20 to-transparent' },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="group relative rounded-lg border border-slate-700 bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm px-6 py-5 shadow-xl hover:shadow-2xl hover:border-slate-600 transition-all duration-300"
+                >
+                  <div className={`absolute inset-0 rounded-lg bg-gradient-to-br ${stat.borderColor} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                  <div className="relative">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                      {stat.label}
+                    </p>
+                    <p className="mt-3 text-4xl font-bold text-white tabular-nums">
+                      {stat.value}
                     </p>
                   </div>
-                  <button type="button" onClick={() => setGradeFiles((p) => p.filter((g) => g.id !== f.id))} className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100">
-                    <X className="h-4 w-4" />
-                  </button>
                 </div>
               ))}
             </div>
-          )}
-        </div>
-        </div>{/* end stats+upload grid */}
 
-        {/* Submissions table */}
-        <div data-guide="grade-submissions" className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-            <h2 className="text-base font-semibold text-slate-900">Submissions</h2>
-            <button onClick={loadSubmissions} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700" title="Refresh">
-              <RefreshCw className="h-4 w-4" />
-            </button>
+            {/* Right: Upload zone */}
+            <div data-guide="grade-upload" className="space-y-3">
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-400 pl-1">Upload Answer Sheets</h2>
+              <label
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(e) => { e.preventDefault(); setIsDragging(false); handleUpload(e.dataTransfer.files); }}
+                className={`block cursor-pointer rounded-lg border-2 border-dashed px-6 py-10 text-center transition-all duration-200 ${
+                  isDragging
+                    ? 'border-blue-500 bg-blue-500/10 backdrop-blur-sm'
+                    : 'border-slate-700 bg-slate-800/30 backdrop-blur-sm hover:border-slate-600 hover:bg-slate-800/50'
+                }`}
+              >
+                <div className="flex flex-col items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/30 to-indigo-500/30">
+                    <Upload className="h-5 w-5 text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white">Drop files here</p>
+                    <p className="mt-1 text-xs text-slate-400">PDF / DOCX • up to 20 files • 5 MB each</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); fileInputRef.current?.click(); }}
+                    className="mt-2 rounded-lg border border-slate-600 bg-slate-800/40 backdrop-blur-sm px-4 py-2 text-xs font-semibold text-slate-200 shadow-lg hover:shadow-xl hover:bg-slate-700/40 hover:border-slate-500 transition-all duration-200"
+                  >
+                    Browse Files
+                  </button>
+                </div>
+                <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" multiple className="hidden" onChange={(e) => handleUpload(e.target.files)} />
+              </label>
+
+              {gradeFiles.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  {gradeFiles.map((f) => (
+                    <div key={f.id} className="flex items-center gap-3 rounded-lg border border-slate-700 bg-slate-800/30 backdrop-blur-sm px-4 py-2.5 shadow-lg hover:shadow-xl hover:bg-slate-800/50 transition-all">
+                      <div className="relative flex h-9 w-9 shrink-0 items-center justify-center">
+                        <CircleProgress progress={f.progress} />
+                        <Upload className="absolute h-3 w-3 text-blue-400" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-white">{f.file.name}</p>
+                        <p className="text-xs text-slate-400">
+                          {f.error ? <span className="text-rose-400 font-medium">{f.error}</span>
+                            : f.done ? <span className="text-emerald-400 font-medium">Uploaded • grading in progress</span>
+                            : `Uploading ${f.progress}%`}
+                        </p>
+                      </div>
+                      <button type="button" onClick={() => setGradeFiles((p) => p.filter((g) => g.id !== f.id))} className="rounded-full p-1.5 text-slate-500 hover:bg-slate-700/50 hover:text-slate-300 transition-colors">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>{/* end stats+upload grid */}
+
+          {/* Submissions table */}
+          <div data-guide="grade-submissions" className="overflow-hidden rounded-lg border border-slate-700 bg-slate-800/30 backdrop-blur-sm shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-700 px-6 py-4">
+              <h2 className="text-lg font-bold text-white">Submissions</h2>
+              <button
+                onClick={loadSubmissions}
+                className="rounded-lg p-2 text-slate-400 hover:bg-slate-700/40 hover:text-slate-300 transition-colors"
+                title="Refresh submissions"
+              >
+                <RefreshCw className="h-5 w-5" />
+              </button>
+            </div>
+
+            {loadingSubs ? (
+              <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                <Loader2 className="mb-3 h-6 w-6 animate-spin text-slate-300" />
+                <p className="text-sm font-medium text-slate-400">Loading submissions…</p>
+              </div>
+            ) : submissions.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-700/30">
+                  <GraduationCap className="h-8 w-8 text-slate-500" />
+                </div>
+                <p className="text-base font-semibold text-slate-300">No submissions yet</p>
+                <p className="mt-1 text-sm text-slate-400">Upload student answer sheets above to begin grading</p>
+              </div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-700 bg-slate-800/20 text-left text-xs font-bold uppercase tracking-wide text-slate-300">
+                    <th className="px-6 py-3">Student</th>
+                    <th className="px-6 py-3">Status</th>
+                    <th className="px-6 py-3">Score</th>
+                    <th className="px-6 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-700">
+                  {submissions.map((sub) => {
+                    const norm = sub.validation_status;
+                    const canReview = norm === 'SUCCESS' || norm === 'FINALIZED';
+                    const canFinalize = norm === 'SUCCESS' && !sub.is_finalized;
+                    const isFinalizing = finalizing === sub.submission_id;
+                    const scoreStr = sub.total_score !== null && sub.max_score !== null
+                      ? `${sub.total_score} / ${sub.max_score}`
+                      : sub.total_score !== null ? String(sub.total_score) : '—';
+
+                    return (
+                      <tr key={sub.submission_id} className="hover:bg-slate-700/20 transition-colors duration-150">
+                        <td className="px-6 py-4">
+                          <p className="font-semibold text-white">{sub.student_id ?? `Submission #${sub.submission_id}`}</p>
+                          <p className="text-xs text-slate-400 font-medium mt-0.5">ID: {sub.submission_id}</p>
+                        </td>
+                        <td className="px-6 py-4"><StatusBadge status={norm} /></td>
+                        <td className="px-6 py-4 font-mono font-semibold text-slate-200">{scoreStr}</td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            {canReview && (
+                              <button
+                                type="button"
+                                onClick={() => router.push(`/papers/${paperId}/grade/${sub.submission_id}`)}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-600 bg-slate-800/40 backdrop-blur-sm px-3 py-2 text-xs font-semibold text-slate-200 shadow-lg hover:shadow-xl hover:bg-slate-700/40 hover:border-slate-500 transition-all duration-200"
+                              >
+                                <FileText className="h-3.5 w-3.5" /> Review
+                              </button>
+                            )}
+                            {canFinalize && (
+                              <button
+                                type="button"
+                                disabled={isFinalizing}
+                                onClick={() => finalizeSubmission(sub.submission_id)}
+                                className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-3 py-2 text-xs font-semibold text-white shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200"
+                              >
+                                {isFinalizing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Lock className="h-3.5 w-3.5" /> Finalize</>}
+                              </button>
+                            )}
+                            {norm === 'FINALIZED' && (
+                              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
+                                <CheckCircle2 className="h-3.5 w-3.5" /> Done
+                              </span>
+                            )}
+                            {/* Delete */}
+                            {confirmDeleteId === sub.submission_id ? (
+                              <div className="flex items-center gap-2 rounded-lg border border-rose-600/40 bg-rose-950/30 px-3 py-2">
+                                <span className="text-xs font-semibold text-rose-400">Delete?</span>
+                                <button type="button" disabled={deletingId === sub.submission_id}
+                                  onClick={() => deleteSubmission(sub.submission_id)}
+                                  className="rounded px-2 py-1 text-xs font-bold text-rose-400 hover:bg-rose-900/40 disabled:opacity-60 transition-colors">
+                                  {deletingId === sub.submission_id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Yes'}
+                                </button>
+                                <button type="button" onClick={() => setConfirmDeleteId(null)}
+                                  className="rounded px-2 py-1 text-xs font-semibold text-slate-400 hover:bg-slate-700/40 transition-colors">No</button>
+                              </div>
+                            ) : (
+                              <button type="button" onClick={() => setConfirmDeleteId(sub.submission_id)}
+                                className="rounded-lg p-2 text-slate-500 hover:bg-rose-950/30 hover:text-rose-400 transition-colors">
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
 
-          {loadingSubs ? (
-            <div className="flex flex-col items-center py-12 text-slate-400">
-              <Loader2 className="mb-2 h-6 w-6 animate-spin" />
-              <p className="text-sm">Loading submissions…</p>
-            </div>
-          ) : submissions.length === 0 ? (
-            <div className="flex flex-col items-center py-14 text-slate-400">
-              <GraduationCap className="mb-3 h-10 w-10 text-slate-200" />
-              <p className="text-sm font-medium text-slate-500">No submissions yet</p>
-              <p className="text-xs">Upload student answer sheets above to begin</p>
-            </div>
-          ) : (
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50 text-left text-[11px] uppercase tracking-widest text-slate-500">
-                  <th className="px-5 py-3 font-medium">Student</th>
-                  <th className="px-5 py-3 font-medium">Status</th>
-                  <th className="px-5 py-3 font-medium">Score</th>
-                  <th className="px-5 py-3 text-right font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {submissions.map((sub) => {
-                  const norm = sub.validation_status;
-                  const canReview = norm === 'SUCCESS' || norm === 'FINALIZED';
-                  const canFinalize = norm === 'SUCCESS' && !sub.is_finalized;
-                  const isFinalizing = finalizing === sub.submission_id;
-                  const scoreStr = sub.total_score !== null && sub.max_score !== null
-                    ? `${sub.total_score} / ${sub.max_score}`
-                    : sub.total_score !== null ? String(sub.total_score) : '—';
-
-                  return (
-                    <tr key={sub.submission_id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="px-5 py-3.5">
-                        <p className="font-medium text-slate-900">{sub.student_id ?? `Submission #${sub.submission_id}`}</p>
-                        <p className="text-xs text-slate-400">#{sub.submission_id}</p>
-                      </td>
-                      <td className="px-5 py-3.5"><StatusBadge status={norm} /></td>
-                      <td className="px-5 py-3.5 tabular-nums text-slate-700">{scoreStr}</td>
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center justify-end gap-2">
-                          {canReview && (
-                            <button
-                              type="button"
-                              onClick={() => router.push(`/papers/${paperId}/grade/${sub.submission_id}`)}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
-                            >
-                              <FileText className="h-3.5 w-3.5" /> Review
-                            </button>
-                          )}
-                          {canFinalize && (
-                            <button
-                              type="button"
-                              disabled={isFinalizing}
-                              onClick={() => finalizeSubmission(sub.submission_id)}
-                              className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-violet-700 disabled:opacity-60"
-                            >
-                              {isFinalizing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Lock className="h-3.5 w-3.5" /> Finalize</>}
-                            </button>
-                          )}
-                          {norm === 'FINALIZED' && (
-                            <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
-                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Done
-                            </span>
-                          )}
-                          {/* Delete */}
-                          {confirmDeleteId === sub.submission_id ? (
-                            <div className="flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5">
-                              <span className="text-xs text-rose-700">Delete?</span>
-                              <button type="button" disabled={deletingId === sub.submission_id}
-                                onClick={() => deleteSubmission(sub.submission_id)}
-                                className="rounded px-2 py-0.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-60">
-                                {deletingId === sub.submission_id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Yes'}
-                              </button>
-                              <button type="button" onClick={() => setConfirmDeleteId(null)}
-                                className="rounded px-2 py-0.5 text-xs text-slate-500 hover:bg-slate-100">No</button>
-                            </div>
-                          ) : (
-                            <button type="button" onClick={() => setConfirmDeleteId(sub.submission_id)}
-                              className="rounded-lg p-1.5 text-slate-300 transition hover:bg-rose-50 hover:text-rose-500">
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
         </div>
-
       </div>
     </main>
   );

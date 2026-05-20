@@ -81,10 +81,11 @@ export default function FluidCursor() {
             <feColorMatrix
               in="displaced"
               type="matrix"
-              values="1.08 0 0 0 0
-                      0 1.02 0 0 0
-                      0 0 1.12 0 0
-                      0 0 0 1 0"
+              // values="1.08 0 0 0 0
+              //         0 1.02 0 0 0
+              //         0 0 1.12 0 0
+              //         0 0 0 1 0"
+              values="1.08 0 0 0 0 0 1.02 0 0 0 0 0 1.12 0 0 0 0 0 1 0"
               result="color-shifted"
             />
             {/* Subtle gaussian for glass softness */}
