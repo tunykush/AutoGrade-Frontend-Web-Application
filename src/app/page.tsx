@@ -6,7 +6,6 @@ import ProgressBar from '@/components/ui/ProgressBar';
 import FAQItem from '@/components/sections/FAQItem';
 import { NeatGradient } from '@firecms/neat';
 import Navbar from '@/components/ui/Navbar';
-import FluidCursor from '@/components/ui/FluidCursor';
  
 // Single source of truth for horizontal padding
 const CONTAINER = "max-w-[1200px] mx-auto px-6 md:px-10";
@@ -66,15 +65,6 @@ const glassStyle: React.CSSProperties = {
   boxShadow: '0 8px 32px rgba(35,51,74,0.18), inset 0 1px 0 rgba(255,255,255,0.45)',
   overflowX: 'hidden',
 };
- 
-// Only show fluid cursor on non-touch devices
-function useIsTouchDevice() {
-  const [isTouch, setIsTouch] = useState(false);
-  useEffect(() => {
-    setIsTouch('ontouchstart' in window || navigator.maxTouchPoints > 0);
-  }, []);
-  return isTouch;
-}
 
 export default function HomePage() {
   const exploreItems = [
@@ -152,6 +142,11 @@ export default function HomePage() {
   const [hoverLms, setHoverLms] = useState(false);
 
   const [hoverTryFree, setHoverTryFree] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setIsLoggedIn(document.cookie.includes('is_logged_in'));
+  }, []);
   const [hoverViewDemo, setHoverViewDemo] = useState(false);
   const [hoverBookDemo, setHoverBookDemo] = useState(false);
 
@@ -202,13 +197,9 @@ export default function HomePage() {
       gradient.destroy();
     };
   }, []);
- 
-  const isTouch = useIsTouchDevice();
 
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: '#F8F5F0', color: '#23334A'}}>
-      {/* Fluid glass cursor effect — desktop only */}
-      {!isTouch && <FluidCursor />}
  
       {/* ─── NAVBAR + HERO (single unified dark section) ─── */}
       <section style={{ position: 'relative', paddingBottom: '80px' }}>
@@ -250,7 +241,8 @@ export default function HomePage() {
               provides feedback, and cut grading time by up to 80%.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <button
+              <Link
+                href={isLoggedIn ? '/papers' : '/signup'}
                 onMouseEnter={() => setHoverTryFree(true)}
                 onMouseLeave={() => setHoverTryFree(false)}
                 className="w-full sm:w-auto px-8 py-3.5 rounded-full text-sm font-semibold cursor-pointer transition"
@@ -261,7 +253,7 @@ export default function HomePage() {
                 }}
               >
                 Try AutoGrade Free
-              </button>
+              </Link>
               <button
                 className="w-full sm:w-auto px-8 py-3.5 rounded-full text-sm font-semibold cursor-pointer transition hover:bg-white/30"
                 style={{ color: 'white', border: '1.5px solid rgba(255,255,255,0.45)' }}
@@ -281,8 +273,8 @@ export default function HomePage() {
                   Supported by leading universities
                 </p>
                 <div
-                  onMouseEnter={() => setHoverLms(true)}
-                  onMouseLeave={() => setHoverLms(false)}
+                  // onMouseEnter={() => setHoverLms(true)}
+                  // onMouseLeave={() => setHoverLms(false)}
                   style={{
                     ...glassStyle,
                     overflowX: 'hidden',
@@ -302,8 +294,8 @@ export default function HomePage() {
                   Integrates seamlessly with LMS platforms
                 </p>
                 <div
-                  onMouseEnter={() => setHoverUni(true)}
-                  onMouseLeave={() => setHoverUni(false)}
+                  // onMouseEnter={() => setHoverUni(true)}
+                  // onMouseLeave={() => setHoverUni(false)}
                   style={{
                     ...glassStyle,
                     transform: hoverUni ? 'scale(1.06)' : 'scale(1)',
@@ -356,12 +348,13 @@ export default function HomePage() {
                 </div>
               ))}
               <div className="mt-4 flex md:block justify-center">
-                <button
+                <Link
+                  href={isLoggedIn ? '/papers' : '/signup'}
                   className="self-center mt-4 px-20 py-4 rounded-full text-sm font-semibold cursor-pointer transition-transform duration-300 hover:scale-105 text-white"
                   style={{ backgroundColor: '#324B73' }}
                 >
                   Try AutoGrade Free
-                </button>
+                </Link>
               </div>
             </div>
           </Animate>
@@ -428,12 +421,13 @@ export default function HomePage() {
                     Save up to <span className="font-bold text-xl">85%</span> of your marking time
                   </p>
                 </div>
-                <button
+                <Link
+                  href={isLoggedIn ? '/papers' : '/signup'}
                   className="self-center mt-4 px-20 py-4 rounded-full text-sm font-semibold cursor-pointer transition-transform duration-300 hover:scale-105 text-white"
                   style={{ backgroundColor: '#324B73' }}
                 >
                   Try AutoGrade Free
-                </button>
+                </Link>
               </div>
             </Animate>
             <Animate delay={160}>
