@@ -70,15 +70,6 @@ export default function SignUpPage() {
       title="Create your account"
       subtitle="Welcome! Please fill in the details to get started."
     >
-      <SocialButton icon={<GoogleIcon />} badge="Last used">
-        Continue with Google
-      </SocialButton>
-
-      <SocialButton icon={<GithubIcon />}>
-        Continue with GitHub
-      </SocialButton>
-
-      <Divider />
 
       <form onSubmit={handleSubmit}>
         <AuthInput

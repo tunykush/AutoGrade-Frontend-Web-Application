@@ -58,9 +58,6 @@ export default function SignInForm() {
 
   return (
     <AuthLayout title="Sign in to your account" subtitle="Welcome back! Please sign in to continue">
-      <SocialButton icon={<GoogleIcon />} badge="Last used">Continue with Google</SocialButton>
-      <SocialButton icon={<GithubIcon />}>Continue with GitHub</SocialButton>
-      <Divider />
       <form onSubmit={handleSubmit}>
         <AuthInput
           label="Username"

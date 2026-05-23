@@ -32,7 +32,7 @@ export default async function Header() {
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900">
             <GraduationCap className="h-4 w-4 text-white" />
           </div>
-          <span className="text-sm font-bold tracking-tight">Edgen AI</span>
+          <span className="text-sm font-bold tracking-tight">EdGenAI</span>
         </Link>
 
         {/* Nav */}

@@ -14,10 +14,26 @@ import {
   ArrowRight,
   BookOpen,
   Eye,
+  Pencil,
+  Plus,
+  Loader2,
 } from 'lucide-react';
 import { Paper } from '@/components/papers/types';
 import { normalizeStatus } from '@/components/papers/StatusBadge';
 import Navbar from '@/components/ui/Navbar';
+
+function extractMsg(data: unknown, fallback: string): string {
+  if (!data || typeof data !== 'object') return fallback;
+  const d = data as Record<string, unknown>;
+  if (typeof d.error === 'string') return d.error;
+  if (d.error && typeof d.error === 'object') {
+    const e = d.error as Record<string, unknown>;
+    if (typeof e.message === 'string') return e.message;
+  }
+  if (typeof d.message === 'string') return d.message;
+  if (typeof d.detail === 'string') return d.detail;
+  return JSON.stringify(data);
+}
 
 function CircleProgress({ progress }: { progress: number }) {
   const r = 18;
@@ -37,6 +53,222 @@ function CircleProgress({ progress }: { progress: number }) {
 
 type UploadFile = { id: number; file: File; progress: number; uploaded: boolean; error?: string };
 
+// ── Create from scratch modal ─────────────────────────────────────────────
+type ScratchSubPart = { label: string; text: string; max_marks: number };
+type ScratchQuestion = { text: string; max_marks: number; subParts: ScratchSubPart[] };
+const emptyScratchQ = (): ScratchQuestion => ({ text: '', max_marks: 0, subParts: [] });
+
+function CreateFromScratchModal({ onClose, onCreated }: { onClose: () => void; onCreated: (paperId: number, name: string) => void }) {
+  const [assignmentName, setAssignmentName] = React.useState('');
+  const [questions, setQuestions] = React.useState<ScratchQuestion[]>([emptyScratchQ()]);
+  const [saving, setSaving] = React.useState(false);
+  const [errMsg, setErrMsg] = React.useState<string | null>(null);
+
+  const addQuestion = () => setQuestions(qs => [...qs, emptyScratchQ()]);
+  const removeQuestion = (i: number) => setQuestions(qs => qs.filter((_, idx) => idx !== i));
+  const updateQuestion = (i: number, field: keyof ScratchQuestion, val: string | number) =>
+    setQuestions(qs => { const n = [...qs]; n[i] = { ...n[i], [field]: val }; return n; });
+
+  const addSubPart = (qi: number) =>
+    setQuestions(qs => { const n = [...qs]; n[qi] = { ...n[qi], subParts: [...n[qi].subParts, { label: '', text: '', max_marks: 0 }] }; return n; });
+  const removeSubPart = (qi: number, si: number) =>
+    setQuestions(qs => { const n = [...qs]; n[qi] = { ...n[qi], subParts: n[qi].subParts.filter((_, idx) => idx !== si) }; return n; });
+  const updateSubPart = (qi: number, si: number, field: keyof ScratchSubPart, val: string | number) =>
+    setQuestions(qs => {
+      const n = [...qs];
+      const parts = [...n[qi].subParts];
+      parts[si] = { ...parts[si], [field]: val };
+      n[qi] = { ...n[qi], subParts: parts };
+      return n;
+    });
+
+  const handleCreate = async () => {
+    if (!assignmentName.trim()) return setErrMsg('Please enter an assignment name.');
+    if (questions.some(q => !q.text.trim() && q.subParts.length === 0))
+      return setErrMsg('All questions must have text or at least one sub-question.');
+
+    setSaving(true);
+    setErrMsg(null);
+    try {
+      // 1. Create the paper (blank upload)
+      const fd = new FormData();
+      const blankBlob = new Blob([''], { type: 'application/pdf' });
+      fd.append('file', blankBlob, `${assignmentName.trim()}.pdf`);
+      fd.append('exam_id', '1');
+      fd.append('notes', 'created from scratch');
+
+      const createRes = await fetch('/api/upload-paper', { method: 'POST', body: fd });
+      const createData = await createRes.json().catch(() => null);
+      if (!createRes.ok) throw new Error(extractMsg(createData, 'Failed to create assignment'));
+
+      const paperId = Number(createData?.paper_id);
+      if (!paperId) throw new Error('No paper ID returned');
+
+      // 2. Save the name locally
+      const stored = JSON.parse(localStorage.getItem('paperFileNames') ?? '{}');
+      stored[String(paperId)] = assignmentName.trim();
+      localStorage.setItem('paperFileNames', JSON.stringify(stored));
+
+      // 3. Add each question
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        const qId = String(i + 1);
+        const parts = q.subParts.map((sp, si) => ({
+          canonical_question_id: `${qId}.${String.fromCharCode(97 + si)}`,
+          display_label: sp.label || `Q${qId}(${String.fromCharCode(97 + si)})`,
+          max_marks: sp.max_marks,
+          question_content: { text: sp.text },
+        }));
+        const payload = {
+          paper_id: paperId,
+          canonical_question_id: qId,
+          display_label: `Q${qId}`,
+          max_marks: q.max_marks,
+          question_content: { text: q.text },
+          parts,
+        };
+        const qRes = await fetch('/api/qh/add-question', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const qData = await qRes.json().catch(() => null);
+        if (!qRes.ok) throw new Error(extractMsg(qData, `Failed to save question ${i + 1}`));
+      }
+
+      onCreated(paperId, assignmentName.trim());
+    } catch (err) {
+      setErrMsg(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Modal */}
+      <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16 pointer-events-none overflow-y-auto">
+        <div className="pointer-events-auto w-full max-w-2xl rounded-2xl bg-white shadow-2xl flex flex-col mb-8">
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 shrink-0">
+            <div>
+              <p className="font-semibold text-slate-900">Create Assignment from Scratch</p>
+              <p className="text-xs text-slate-500 mt-0.5">Define questions manually — no file needed</p>
+            </div>
+            <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Body */}
+          <div className="px-6 py-5 space-y-6 overflow-y-auto">
+            {/* Assignment name */}
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-700">Assignment name</label>
+              <input
+                type="text"
+                value={assignmentName}
+                onChange={e => setAssignmentName(e.target.value)}
+                placeholder="e.g. Week 3 — Cybersecurity Governance"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+              />
+            </div>
+
+            {/* Questions */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Questions</p>
+                <button type="button" onClick={addQuestion}
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition">
+                  <Plus className="h-3 w-3" /> Add question
+                </button>
+              </div>
+
+              {questions.map((q, qi) => (
+                <div key={qi} className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+                  {/* Question header */}
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-900 text-[10px] font-bold text-white">
+                      {qi + 1}
+                    </span>
+                    <input
+                      type="text"
+                      value={q.text}
+                      onChange={e => updateQuestion(qi, 'text', e.target.value)}
+                      placeholder="Question text…"
+                      className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-400"
+                    />
+                    <input
+                      type="number" min={0} step={0.5}
+                      value={q.max_marks}
+                      onChange={e => updateQuestion(qi, 'max_marks', Number(e.target.value))}
+                      placeholder="Marks"
+                      className="w-20 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm outline-none focus:border-slate-400"
+                    />
+                    {questions.length > 1 && (
+                      <button type="button" onClick={() => removeQuestion(qi)}
+                        className="rounded-lg p-1.5 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Sub-parts */}
+                  {q.subParts.length > 0 && (
+                    <div className="space-y-2 ml-8">
+                      {q.subParts.map((sp, si) => (
+                        <div key={si} className="flex items-center gap-2">
+                          <input value={sp.label} onChange={e => updateSubPart(qi, si, 'label', e.target.value)}
+                            placeholder={`Label (e.g. (a))`}
+                            className="w-24 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-slate-400" />
+                          <input value={sp.text} onChange={e => updateSubPart(qi, si, 'text', e.target.value)}
+                            placeholder="Sub-question text…"
+                            className="flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-slate-400" />
+                          <input type="number" min={0} step={0.5} value={sp.max_marks}
+                            onChange={e => updateSubPart(qi, si, 'max_marks', Number(e.target.value))}
+                            placeholder="Marks"
+                            className="w-16 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-slate-400" />
+                          <button type="button" onClick={() => removeSubPart(qi, si)}
+                            className="rounded-lg p-1 text-slate-300 hover:text-rose-500 transition">
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <button type="button" onClick={() => addSubPart(qi)}
+                    className="ml-8 inline-flex items-center gap-1 rounded-lg border border-dashed border-slate-300 px-2.5 py-1 text-xs text-slate-400 hover:border-slate-400 hover:text-slate-600 transition">
+                    <Plus className="h-3 w-3" /> Add sub-question
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {errMsg && <p className="text-sm text-rose-600">{errMsg}</p>}
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center gap-3 border-t border-slate-100 px-6 py-4 shrink-0">
+            <button type="button" disabled={saving} onClick={handleCreate}
+              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60">
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              {saving ? 'Creating…' : 'Create Assignment'}
+            </button>
+            <button type="button" onClick={onClose}
+              className="rounded-xl px-4 py-2.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition">
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function PapersPage() {
   const router = useRouter();
   const [papers, setPapers] = React.useState<Paper[]>([]);
@@ -44,10 +276,10 @@ export default function PapersPage() {
   const [isDragging, setIsDragging] = React.useState(false);
   const [loadingPapers, setLoadingPapers] = React.useState(true);
   const [fileNames, setFileNames] = React.useState<Record<string, string>>({});
+  const [showCreateModal, setShowCreateModal] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement | null>(null);
   const pollingRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPollingRef = React.useRef(false);
-  // Map paper_id → blob URL (session-only, cleared on unmount)
   const paperBlobUrls = React.useRef<Map<number, string>>(new Map());
 
   React.useEffect(() => {
@@ -55,12 +287,27 @@ export default function PapersPage() {
     return () => { map.forEach((url) => URL.revokeObjectURL(url)); };
   }, []);
 
-  // Detail drawer state
   const [detailPaper, setDetailPaper] = React.useState<Paper | null>(null);
+  const [renamingId, setRenamingId] = React.useState<number | null>(null);
+  const [renameValue, setRenameValue] = React.useState('');
 
-  const openDetail = React.useCallback((paper: Paper) => {
-    setDetailPaper(paper);
+  const openDetail = React.useCallback((paper: Paper) => { setDetailPaper(paper); }, []);
+
+  const startRename = React.useCallback((paper: Paper, currentName: string) => {
+    setRenamingId(paper.paper_id);
+    setRenameValue(currentName);
   }, []);
+
+  const commitRename = React.useCallback((paperId: number) => {
+    const trimmed = renameValue.trim();
+    if (trimmed) {
+      const stored = JSON.parse(localStorage.getItem('paperFileNames') ?? '{}');
+      stored[String(paperId)] = trimmed;
+      localStorage.setItem('paperFileNames', JSON.stringify(stored));
+      setFileNames({ ...stored });
+    }
+    setRenamingId(null);
+  }, [renameValue]);
 
   React.useEffect(() => {
     setFileNames(JSON.parse(localStorage.getItem('paperFileNames') ?? '{}'));
@@ -159,7 +406,6 @@ export default function PapersPage() {
 
         if (data?.paper_id) {
           const pid = Number(data.paper_id);
-          // Keep blob URL so the drawer can show a PDF preview this session
           const old = paperBlobUrls.current.get(pid);
           if (old) URL.revokeObjectURL(old);
           paperBlobUrls.current.set(pid, URL.createObjectURL(uf.file));
@@ -203,11 +449,21 @@ export default function PapersPage() {
       <div className="px-6 py-8 md:px-10 space-y-8">
 
         {/* Page title */}
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">My Papers</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Upload exam papers, set up rubrics, and grade student submissions.
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">My Papers</h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Upload assignment briefs/exam papers, set up rubrics, and grade student submissions.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowCreateModal(true)}
+            className="shrink-0 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+          >
+            <Plus className="h-4 w-4" />
+            Create from scratch
+          </button>
         </div>
 
         {/* Upload zone */}
@@ -226,7 +482,7 @@ export default function PapersPage() {
                 <Upload className="h-6 w-6 text-slate-500" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-800">Drop your exam paper here</p>
+                <p className="text-sm font-semibold text-slate-800">Drop your assignment brief/exam paper here</p>
                 <p className="mt-0.5 text-xs text-slate-500">PDF, DOC or DOCX · up to 5 MB each · max 10 files</p>
               </div>
               <button
@@ -268,7 +524,6 @@ export default function PapersPage() {
 
         {/* Papers list */}
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-          {/* Header */}
           <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-4">
             <div>
               <h2 className="text-base font-semibold text-slate-900">Uploaded Papers</h2>
@@ -306,7 +561,30 @@ export default function PapersPage() {
                     {/* Info */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <p className="truncate text-sm font-semibold text-slate-900">{name}</p>
+                        {renamingId === paper.paper_id ? (
+                          <input
+                            autoFocus
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            onBlur={() => commitRename(paper.paper_id)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') commitRename(paper.paper_id);
+                              if (e.key === 'Escape') setRenamingId(null);
+                            }}
+                            className="truncate text-sm font-semibold text-slate-900 rounded-md border border-slate-300 bg-slate-50 px-2 py-0.5 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-400"
+                            style={{ minWidth: 0, width: '100%', maxWidth: 280 }}
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => startRename(paper, name)}
+                            title="Rename paper"
+                            className="group flex items-center gap-1.5 truncate text-sm font-semibold text-slate-900 hover:text-slate-600"
+                          >
+                            <span className="truncate">{name}</span>
+                            <Pencil className="h-3 w-3 shrink-0 opacity-0 group-hover:opacity-40 transition-opacity" />
+                          </button>
+                        )}
                         <span className="text-xs text-slate-400">#{paper.paper_id}</span>
                       </div>
                       <div className="mt-0.5 flex items-center gap-3 text-xs text-slate-400">
@@ -388,18 +666,13 @@ export default function PapersPage() {
 
         return (
           <>
-            {/* Backdrop */}
             <div
               className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
               onClick={() => setDetailPaper(null)}
             />
-
-            {/* Centered modal — 90vw × 92vh */}
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
               <div className="pointer-events-auto flex w-full max-w-5xl flex-col rounded-2xl bg-white shadow-2xl"
                 style={{ height: 'min(92vh, 900px)' }}>
-
-                {/* Header */}
                 <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-3.5">
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100">
@@ -425,47 +698,43 @@ export default function PapersPage() {
                       </div>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setDetailPaper(null)}
-                    className="ml-4 shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                  >
+                  <button type="button" onClick={() => setDetailPaper(null)}
+                    className="ml-4 shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
                     <X className="h-4 w-4" />
                   </button>
                 </div>
-
-                {/* PDF — fills remaining space */}
-                <iframe
-                  src={pdfSrc}
-                  className="min-h-0 flex-1 w-full rounded-none border-0"
-                  title="Paper PDF preview"
-                />
-
-                {/* Footer */}
+                <iframe src={pdfSrc} className="min-h-0 flex-1 w-full rounded-none border-0" title="Paper PDF preview" />
                 <div className="flex shrink-0 items-center gap-2 border-t border-slate-100 px-5 py-3.5">
-                <button
-                  type="button"
-                  onClick={() => { setDetailPaper(null); router.push(`/papers/${detailPaper.paper_id}/setup`); }}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
-                >
-                  <Settings className="h-3.5 w-3.5" /> Setup
-                </button>
-                <button
-                  type="button"
-                  disabled={!isReady}
-                  onClick={() => { setDetailPaper(null); router.push(`/papers/${detailPaper.paper_id}/grade`); }}
-                  className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium shadow-sm transition ${
-                    isReady ? 'bg-slate-900 text-white hover:bg-slate-700' : 'cursor-not-allowed bg-slate-100 text-slate-400'
-                  }`}
-                >
-                  <GraduationCap className="h-3.5 w-3.5" /> Grade
-                </button>
+                  <button type="button"
+                    onClick={() => { setDetailPaper(null); router.push(`/papers/${detailPaper.paper_id}/setup`); }}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-slate-50">
+                    <Settings className="h-3.5 w-3.5" /> Setup
+                  </button>
+                  <button type="button" disabled={!isReady}
+                    onClick={() => { setDetailPaper(null); router.push(`/papers/${detailPaper.paper_id}/grade`); }}
+                    className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium shadow-sm transition ${
+                      isReady ? 'bg-slate-900 text-white hover:bg-slate-700' : 'cursor-not-allowed bg-slate-100 text-slate-400'
+                    }`}>
+                    <GraduationCap className="h-3.5 w-3.5" /> Grade
+                  </button>
+                </div>
               </div>
-            </div>{/* modal box */}
-            </div>{/* centering container */}
+            </div>
           </>
         );
       })()}
+
+      {/* Create from scratch modal */}
+      {showCreateModal && (
+        <CreateFromScratchModal
+          onClose={() => setShowCreateModal(false)}
+          onCreated={(paperId, name) => {
+            setShowCreateModal(false);
+            fetchPapers();
+            router.push(`/papers/${paperId}/setup`);
+          }}
+        />
+      )}
     </main>
   );
 }

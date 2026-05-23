@@ -1,5 +1,9 @@
 'use client'
 
+// ── Contact destination ────────────────────────────────────────────────────
+const CONTACT_EMAIL = 'contactus@edgenai.com.au'
+// ──────────────────────────────────────────────────────────────────────────
+
 import Link from 'next/link'
 import { useState, useEffect, useRef } from 'react'
 import {
@@ -17,7 +21,7 @@ const contactCards = [
     icon: Mail,
     title: 'Email us',
     desc: "Send us a message and we'll get back to you promptly.",
-    detail: 'support@edgenai.com',
+    detail: 'contactus@edgenai.com.au',
   },
   {
     icon: Clock,
@@ -29,7 +33,7 @@ const contactCards = [
     icon: Building2,
     title: 'Enterprise & sales',
     desc: 'Need a custom institutional plan or integration support?',
-    detail: 'sales@edgenai.com',
+    detail: 'contactus@edgenai.com.au',
   },
 ]
 
@@ -91,6 +95,11 @@ export default function ContactPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    const subject = encodeURIComponent(`[${form.topic}] Message from ${form.name}`)
+    const body = encodeURIComponent(
+      `Name: ${form.name}\nEmail: ${form.email}\nTopic: ${form.topic}\n\n${form.message}`
+    )
+    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`
     setSubmitted(true)
   }
 
@@ -134,7 +143,7 @@ export default function ContactPage() {
               <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
               </svg>
-              Edgen AI — Support
+              EdGenAI — Support
             </span>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight text-white mb-6">
               Get in Touch
@@ -240,7 +249,7 @@ export default function ContactPage() {
                   <div>
                     <label className="mb-1.5 block text-xs font-semibold" style={{ color: '#23334A' }}>Email address</label>
                     <input
-                      name="email" type="email" required placeholder="jane@university.edu"
+                      name="email" type="email" required placeholder="jane@university.edu.au"
                       value={form.email} onChange={handleChange}
                       className="w-full rounded-xl px-4 py-2.5 text-sm outline-none transition"
                       style={{ border: '1px solid rgba(50,75,115,0.2)', backgroundColor: '#F8F5F0', color: '#23334A' }}
@@ -280,25 +289,6 @@ export default function ContactPage() {
           </div>
         </div>
       </section>
-
-      {/* ── CTA BANNER ───────────────────────────────────── */}
-      {/* <section className="px-6 py-14 md:px-8" style={{ backgroundColor: '#ffffff', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-        <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-6 text-center md:flex-row md:items-center md:text-left">
-          <div>
-            <h2 className="text-xl font-bold style={{ color: '#23334A', opacity: 0.85 }} md:text-2xl">Not sure where to start?</h2>
-            <p className="mt-2 text-sm" style={{ color: '#23334A', opacity: 0.85 }}>
-              Create a free account and explore Edgen AI with no commitment.
-            </p>
-          </div>
-          <Link
-            href="/signup"
-            className="shrink-0 inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-transform duration-300 hover:scale-105"
-            style={{ backgroundColor: '#23334A', color: 'white', border: '1px solid rgba(255,255,255,0.15)' }}
-          >
-            Get started free <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </section> */}
 
       {/* ── FOOTER ───────────────────────────────────────── */}
       <footer className="py-12 md:py-16" style={{ backgroundColor: '#23334A' }}>

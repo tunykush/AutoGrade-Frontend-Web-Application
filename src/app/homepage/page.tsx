@@ -65,14 +65,14 @@ const featureCards = [
   {
     icon: ShieldCheck,
     title: 'Handle large classes with ease',
-    desc: 'From 30 to 3 000 students — Edgen AI scales to your institution without slowing down.',
+    desc: 'From 30 to 3 000 students — EdGenAI scales to your institution without slowing down.',
   },
 ];
 
 const faqs = [
   {
-    q: 'How does Edgen AI grade assignments?',
-    a: 'Edgen AI uses large language models fine-tuned on academic rubrics. It reads each submission, maps answers to your criteria, assigns partial marks, and writes per-criterion feedback — all in seconds.',
+    q: 'How does EdGenAI grade assignments?',
+    a: 'EdGenAI uses large language models fine-tuned on academic rubrics. It reads each submission, maps answers to your criteria, assigns partial marks, and writes per-criterion feedback — all in seconds.',
   },
   {
     q: 'How does the grading process work?',
@@ -83,7 +83,7 @@ const faqs = [
     a: 'You always have the final say. Override any score or comment inline. The system learns from your corrections over time, improving accuracy for future batches.',
   },
   {
-    q: 'How much does Edgen AI cost?',
+    q: 'How much does EdGenAI cost?',
     a: 'We offer a free tier for up to 50 submissions per month. Institutional plans are priced per seat — contact us for a quote tailored to your class sizes.',
   },
 ];
@@ -122,7 +122,7 @@ export default async function HomePage() {
           {/* badge */}
           <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
             <GraduationCap className="h-3.5 w-3.5 text-slate-900" />
-            Edgen AI — Academic Grading Platform
+            EdGenAI — Academic Grading Platform
           </span>
 
           <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 md:text-6xl">
@@ -223,7 +223,7 @@ export default async function HomePage() {
           <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Impact</p>
           <h2 className="mt-3 text-2xl font-bold text-slate-900 md:text-3xl">Time saved, life reclaimed</h2>
           <p className="mt-3 max-w-lg text-sm text-slate-500">
-            Educators using Edgen AI report reclaiming evenings and weekends they used to spend buried in marking.
+            Educators using EdGenAI report reclaiming evenings and weekends they used to spend buried in marking.
           </p>
 
           <div className="mt-10 grid gap-6 md:grid-cols-2">
@@ -232,8 +232,8 @@ export default async function HomePage() {
               <p className="text-sm font-bold text-slate-900">Average time per assignment (pairs)</p>
               <div className="mt-6 space-y-4">
                 {[
-                  { label: 'Without Edgen AI', pct: 88, mins: '22 min' },
-                  { label: 'With Edgen AI', pct: 18, mins: '4 min' },
+                  { label: 'Without EdGenAI', pct: 88, mins: '22 min' },
+                  { label: 'With EdGenAI', pct: 18, mins: '4 min' },
                 ].map(({ label, pct, mins }) => (
                   <div key={label}>
                     <div className="flex justify-between text-xs text-slate-500 mb-1.5">
@@ -376,7 +376,7 @@ export default async function HomePage() {
             <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Enterprise</p>
             <h2 className="mt-3 text-2xl font-bold text-slate-900 md:text-3xl">Scale AI Across Your Institution</h2>
             <p className="mt-4 text-sm leading-relaxed text-slate-500">
-              Edgen AI offers institutional plans with SSO, custom rubric libraries, LMS integrations, and dedicated support. Trusted by universities and schools worldwide.
+              EdGenAI offers institutional plans with SSO, custom rubric libraries, LMS integrations, and dedicated support. Trusted by universities and schools worldwide.
             </p>
             <Link
               href="/waitlist"
@@ -408,7 +408,7 @@ export default async function HomePage() {
 
       {/* ── FOOTER ───────────────────────────────────────── */}
       <footer className="border-t border-slate-100 bg-white px-6 py-8 text-center md:px-8">
-        <p className="text-xs text-slate-400">© {new Date().getFullYear()} Edgen AI. All rights reserved.</p>
+        <p className="text-xs text-slate-400">© {new Date().getFullYear()} EdGenAI. All rights reserved.</p>
       </footer>
     </div>
   );
