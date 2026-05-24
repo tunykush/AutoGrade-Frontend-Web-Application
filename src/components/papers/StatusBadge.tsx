@@ -37,7 +37,7 @@ export function StatusBadge({ status }: { status: string }) {
       label: 'Ready',
     },
     FINALIZED: {
-      cls: 'bg-violet-50 text-violet-700',
+      cls: 'bg-[#eaf2f7] text-[#23334a]',
       icon: <Lock className="h-3.5 w-3.5" />,
       label: 'Finalized',
     },

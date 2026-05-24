@@ -988,8 +988,8 @@ export default function SetupPage() {
                           {pSample && (
                             <div>
                               <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-1.5">Sample Answer</p>
-                              <div className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-3">
-                                <p className="text-sm text-violet-900 leading-relaxed whitespace-pre-wrap">{pSample}</p>
+                              <div className="rounded-xl border border-[#c7d9e5] bg-[#eaf2f7] px-4 py-3">
+                                <p className="text-sm text-[#23334a] leading-relaxed whitespace-pre-wrap">{pSample}</p>
                               </div>
                             </div>
                           )}
@@ -1012,8 +1012,8 @@ export default function SetupPage() {
                     {hasOwnRubric && sampleText && (
                       <div className="ml-10">
                         <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-1.5">Sample Answer</p>
-                        <div className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-3">
-                          <p className="text-sm text-violet-900 leading-relaxed whitespace-pre-wrap">{sampleText}</p>
+                        <div className="rounded-xl border border-[#c7d9e5] bg-[#eaf2f7] px-4 py-3">
+                          <p className="text-sm text-[#23334a] leading-relaxed whitespace-pre-wrap">{sampleText}</p>
                         </div>
                       </div>
                     )}
@@ -1258,7 +1258,7 @@ export default function SetupPage() {
 
               {shStatus === 'SUCCESS' && (
                 <button type="button" disabled={shFinalizing} onClick={finalizeSampleAnswer}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:opacity-60">
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#324B73] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#23334a] disabled:opacity-60">
                   {shFinalizing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
                   Finalize Sample Answer
                 </button>

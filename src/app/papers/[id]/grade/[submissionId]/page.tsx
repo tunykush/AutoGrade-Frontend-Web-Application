@@ -230,7 +230,11 @@ export default function ReviewPage() {
                 </button>
               ) : (
                 <button type="button" disabled={finalizing} onClick={finalizeSubmission}
-                  className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:opacity-60">
+                  className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition disabled:opacity-60"
+                  style={{ backgroundColor: '#23334a' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#1c2a3a'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#23334a'; }}
+                >
                   {finalizing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
                   Finalize
                 </button>
