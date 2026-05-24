@@ -213,61 +213,59 @@ export default function GradePage() {
     finally { setFinalizing(null); }
   };
 
-  const handleExportCSV = () => {
-    try {
-      if (submissions.length === 0) {
-        alert('No submissions available to export.');
-        return;
-      }
-
-      const csvData = submissions.map((sub) => ({
-        Student: `"${sub.student_id ?? `Submission #${sub.submission_id}`}"`,
-        "Submission ID": `"${sub.submission_id}"`,
-        Status: `"${sub.validation_status}"`,
-        Score:
-          sub.total_score !== null && sub.max_score !== null
-            ? `"${sub.total_score} / ${sub.max_score}"`
-            : sub.total_score !== null
-            ? `"${sub.total_score}"`
-            : `"—"`,
-        Finalized: `"${sub.is_finalized ? 'Yes' : 'No'}"`,
-      }));
-
-      const csv = [
-        Object.keys(csvData[0]).join(','),
-        ...csvData.map((row) => Object.values(row).join(',')),
-      ].join('\n');
-
-      const blob = new Blob([csv], {
-        type: 'text/csv;charset=utf-8;',
-      });
-
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-
-      link.href = url;
-      link.download = `${paperName.replace(/\s+/g, '_')}_submissions.csv`;
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('CSV export failed:', error);
-      alert('Failed to export CSV');
+const handleExportCSV = () => {
+  try {
+    if (submissions.length === 0) {
+      alert('No submissions available to export.');
+      return;
     }
-  };
+
+  const csvData = submissions.map((sub) => ({
+    "Student ID": `"${sub.student_id ?? `Submission #${sub.submission_id}`}"`,
+    Score:
+      sub.total_score !== null && sub.max_score !== null
+        ? `"${sub.total_score} / ${sub.max_score}"`
+        : sub.total_score !== null
+        ? `"${sub.total_score}"`
+        : `"—"`,
+  }));
+
+    const csv = [
+      Object.keys(csvData[0]).join(','),
+      ...csvData.map((row) => Object.values(row).join(',')),
+    ].join('\n');
+
+    const blob = new Blob([csv], {
+      type: 'text/csv;charset=utf-8;',
+    });
+
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = `${paperName.replace(/\s+/g, '_')}_scores.csv`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('CSV export failed:', error);
+    alert('Failed to export CSV');
+  }
+};
 
   const finalizedCount = submissions.filter((s) => s.validation_status === 'FINALIZED').length;
   const successCount = submissions.filter((s) => s.validation_status === 'SUCCESS').length;
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    <main className="min-h-screen bg-[#f6f7f9] text-slate-900">
+      {/* <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl" />
-      </div>
+      </div> */}
+      <div className="relative z-10"></div>
       
       <div className="relative z-10">
         <Navbar variant="light" />
