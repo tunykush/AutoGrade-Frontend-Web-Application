@@ -221,7 +221,7 @@ const handleExportCSV = () => {
     }
 
   const csvData = submissions.map((sub) => ({
-    "Student ID": `"${sub.student_id ?? `Submission #${sub.submission_id}`}"`,
+    "Student ID": `"${subNames[sub.submission_id] ?? sub.student_id ?? `Submission #${sub.submission_id}`}"`,
     Score:
       sub.total_score !== null && sub.max_score !== null
         ? `"${sub.total_score} / ${sub.max_score}"`
