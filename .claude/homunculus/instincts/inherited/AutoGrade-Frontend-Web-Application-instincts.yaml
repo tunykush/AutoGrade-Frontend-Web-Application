@@ -1,0 +1,500 @@
+# Instincts generated from https://github.com/tunykush/AutoGrade-Frontend-Web-Application
+# Generated: 2026-05-25T10:00:27.842Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: AutoGrade-Frontend-Web-Application-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# AutoGrade Frontend Web Application Commit Length
+
+## Action
+
+Keep commit messages concise (~39 characters)
+
+## Evidence
+
+- Average commit message length: 39 chars
+- Based on 39 commits
+
+---
+id: AutoGrade-Frontend-Web-Application-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# AutoGrade Frontend Web Application Naming Files
+
+## Action
+
+Use camelCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: camelCase
+
+---
+id: AutoGrade-Frontend-Web-Application-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# AutoGrade Frontend Web Application Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: AutoGrade-Frontend-Web-Application-arch-type-based
+trigger: "when adding new code"
+confidence: 0.8
+domain: architecture
+source: repo-analysis
+source_repo: https://github.com/tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# AutoGrade Frontend Web Application Arch Type Based
+
+## Action
+
+Place code in the appropriate type folder (components/, services/, utils/, etc.)
+
+## Evidence
+
+- Type-based module organization detected
+- Folders: app, components, context, lib
+
+---
+id: AutoGrade-Frontend-Web-Application-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# AutoGrade Frontend Web Application Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: AutoGrade-Frontend-Web-Application-workflow-add-or-update-api-endpoint
+trigger: "when doing add or update api endpoint"
+confidence: 0.7
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# AutoGrade Frontend Web Application Workflow Add Or Update Api Endpoint
+
+## Action
+
+Follow the add-or-update-api-endpoint workflow:
+1. Create or modify files under src/app/api/[endpoint]/route.ts
+2. Optionally add related files for new endpoints (e.g., tests, types)
+3. Commit with a message referencing routes, fixes, or additions
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~4x per month
+- Files: src/app/api/*/route.ts
+
+---
+id: AutoGrade-Frontend-Web-Application-workflow-add-or-update-main-ui-page
+trigger: "when doing add or update main ui page"
+confidence: 0.75
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# AutoGrade Frontend Web Application Workflow Add Or Update Main Ui Page
+
+## Action
+
+Follow the add-or-update-main-ui-page workflow:
+1. Create or modify files under src/app/[page]/page.tsx or nested routes
+2. Optionally update layout or supporting components
+3. Commit with a message referencing the page or feature
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~5x per month
+- Files: src/app/*/page.tsx, src/app/*/*/page.tsx
+
+---
+id: AutoGrade-Frontend-Web-Application-workflow-add-or-update-shared-ui-component
+trigger: "when doing add or update shared ui component"
+confidence: 0.7
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# AutoGrade Frontend Web Application Workflow Add Or Update Shared Ui Component
+
+## Action
+
+Follow the add-or-update-shared-ui-component workflow:
+1. Create or modify files under src/components/ui/ or src/components/[category]/
+2. Optionally update stylesheets or related files
+3. Commit with a message referencing the component
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~4x per month
+- Files: src/components/ui/*.tsx, src/components/ui/*.css, src/components/*/*.tsx
+
+---
+id: AutoGrade-Frontend-Web-Application-workflow-update-authentication-or-auth-ui
+trigger: "when doing update authentication or auth ui"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# AutoGrade Frontend Web Application Workflow Update Authentication Or Auth Ui
+
+## Action
+
+Follow the update-authentication-or-auth-ui workflow:
+1. Modify files under src/components/auth/
+2. Modify related API routes (e.g., signin, signout, signup)
+3. Update context or state management if needed
+4. Commit with a message referencing authentication
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: src/components/auth/*.tsx, src/app/api/signin/route.ts, src/app/api/signout/route.ts
+
+---
+id: AutoGrade-Frontend-Web-Application-workflow-update-branding-or-logo-assets
+trigger: "when doing update branding or logo assets"
+confidence: 0.65
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# AutoGrade Frontend Web Application Workflow Update Branding Or Logo Assets
+
+## Action
+
+Follow the update-branding-or-logo-assets workflow:
+1. Add or modify files under public/logos/
+2. Commit with a message referencing logos or branding
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~3x per month
+- Files: public/logos/*
+
+---
+id: autograde-frontend-web-application-instinct-file-naming
+trigger: "When creating a new file or renaming an existing file."
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# Autograde Frontend Web Application Instinct File Naming
+
+## Action
+
+Use camelCase for file names.
+
+## Evidence
+
+- Pattern in namingConventions.files
+- Files in src/components/ui/ use camelCase
+
+---
+id: autograde-frontend-web-application-instinct-function-naming
+trigger: "When defining a new function."
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# Autograde Frontend Web Application Instinct Function Naming
+
+## Action
+
+Use camelCase for function names.
+
+## Evidence
+
+- Pattern in namingConventions.functions
+
+---
+id: autograde-frontend-web-application-instinct-class-naming
+trigger: "When defining a new class."
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# Autograde Frontend Web Application Instinct Class Naming
+
+## Action
+
+Use PascalCase for class names.
+
+## Evidence
+
+- Pattern in namingConventions.classes
+
+---
+id: autograde-frontend-web-application-instinct-constant-naming
+trigger: "When defining a constant."
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# Autograde Frontend Web Application Instinct Constant Naming
+
+## Action
+
+Use SCREAMING_SNAKE_CASE for constant names.
+
+## Evidence
+
+- Pattern in namingConventions.constants
+
+---
+id: autograde-frontend-web-application-instinct-import-style
+trigger: "When importing modules."
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# Autograde Frontend Web Application Instinct Import Style
+
+## Action
+
+Use absolute import paths.
+
+## Evidence
+
+- Pattern in importStyle: absolute
+
+---
+id: autograde-frontend-web-application-instinct-export-style
+trigger: "When exporting modules or functions."
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# Autograde Frontend Web Application Instinct Export Style
+
+## Action
+
+Use named exports.
+
+## Evidence
+
+- Pattern in exportStyle: named
+
+---
+id: autograde-frontend-web-application-instinct-try-catch-error-handling
+trigger: "When handling errors in code."
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# Autograde Frontend Web Application Instinct Try Catch Error Handling
+
+## Action
+
+Use try-catch blocks for error handling.
+
+## Evidence
+
+- Pattern in errorHandling.style: try-catch
+
+---
+id: autograde-frontend-web-application-instinct-test-location
+trigger: "When adding or updating tests."
+confidence: 0.7
+domain: testing
+source: repo-analysis
+source_repo: tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# Autograde Frontend Web Application Instinct Test Location
+
+## Action
+
+Place test files in a separate directory (e.g., test-files).
+
+## Evidence
+
+- Pattern in architecture.testLocation: separate
+- Presence of test-files folder
+
+---
+id: autograde-frontend-web-application-instinct-git-commit-format
+trigger: "When writing a commit message."
+confidence: 0.7
+domain: git
+source: repo-analysis
+source_repo: tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# Autograde Frontend Web Application Instinct Git Commit Format
+
+## Action
+
+Use a short, freeform message describing the main change (average length ~39 chars).
+
+## Evidence
+
+- Pattern in commits.averageLength
+- Examples: 'delete previous files', 'merge uploadpage'
+
+---
+id: autograde-frontend-web-application-instinct-add-or-update-api-endpoint
+trigger: "When someone wants to add a new backend API endpoint or fix/expand backend functionality."
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# Autograde Frontend Web Application Instinct Add Or Update Api Endpoint
+
+## Action
+
+Create or modify files under src/app/api/[endpoint]/route.ts and commit with a message referencing routes, fixes, or additions.
+
+## Evidence
+
+- Workflow: add-or-update-api-endpoint
+- Commits referencing routes
+
+---
+id: autograde-frontend-web-application-instinct-add-or-update-main-ui-page
+trigger: "When someone wants to create or significantly modify a user-facing page."
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# Autograde Frontend Web Application Instinct Add Or Update Main Ui Page
+
+## Action
+
+Create or modify files under src/app/[page]/page.tsx or nested routes and commit with a message referencing the page or feature.
+
+## Evidence
+
+- Workflow: add-or-update-main-ui-page
+- Commits referencing pages/features
+
+---
+id: autograde-frontend-web-application-instinct-add-or-update-shared-ui-component
+trigger: "When someone wants to create or improve a UI component for reuse."
+confidence: 0.85
+domain: workflow
+source: repo-analysis
+source_repo: tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# Autograde Frontend Web Application Instinct Add Or Update Shared Ui Component
+
+## Action
+
+Create or modify files under src/components/ui/ or src/components/[category]/ and commit with a message referencing the component.
+
+## Evidence
+
+- Workflow: add-or-update-shared-ui-component
+- Commits referencing components
+
+---
+id: autograde-frontend-web-application-instinct-update-authentication-or-auth-ui
+trigger: "When someone wants to change authentication logic or its UI presentation."
+confidence: 0.85
+domain: workflow
+source: repo-analysis
+source_repo: tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# Autograde Frontend Web Application Instinct Update Authentication Or Auth Ui
+
+## Action
+
+Modify files under src/components/auth/, related API routes, and context/state management if needed, then commit with a message referencing authentication.
+
+## Evidence
+
+- Workflow: update-authentication-or-auth-ui
+- Commits referencing authentication
+
+---
+id: autograde-frontend-web-application-instinct-update-branding-or-logo-assets
+trigger: "When someone wants to change or add branding/partner logos."
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: tunykush/AutoGrade-Frontend-Web-Application
+---
+
+# Autograde Frontend Web Application Instinct Update Branding Or Logo Assets
+
+## Action
+
+Add or modify files under public/logos/ and commit with a message referencing logos or branding.
+
+## Evidence
+
+- Workflow: update-branding-or-logo-assets
+- Commits referencing logos/branding
+
