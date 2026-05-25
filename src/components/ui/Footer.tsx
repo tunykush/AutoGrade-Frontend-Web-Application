@@ -58,7 +58,7 @@ export default function Footer() {
               <button
                 key={label}
                 onClick={handleConsultancy}
-                className={`${linkClass} text-left`}
+                className={`${linkClass} text-left cursor-pointer`}
                 style={linkStyle}
               >
                 {label}
