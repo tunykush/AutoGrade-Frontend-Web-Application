@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { NeatGradient } from '@firecms/neat';
 import Navbar from '@/components/ui/Navbar';
+import Footer from '@/components/ui/Footer';
 
 const CONTAINER = "max-w-[1200px] mx-auto px-6 md:px-10";
 
@@ -303,29 +304,8 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ── CTA ──────────────────────────────────────────── */}
-      <section className="py-14" style={{ backgroundColor: '#23334A' }}>
-        <div className={`${CONTAINER} flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left`}>
-          <Animate delay={0}>
-            <div>
-              <h2 className="text-xl font-bold text-white md:text-2xl">Ready to reclaim your time?</h2>
-              <p className="mt-2 text-sm" style={{ color: 'rgba(199,217,229,0.65)' }}>Join hundreds of educators already saving hours every week with EdGenAI.</p>
-            </div>
-          </Animate>
-          <Animate delay={80}>
-            <Link href="/signup"
-              className="shrink-0 inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-semibold transition"
-              style={{ backgroundColor: 'white', color: '#23334A' }}>
-              Get started free <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Animate>
-        </div>
-      </section>
-
       {/* ── FOOTER ───────────────────────────────────────── */}
-      <footer className="py-8 text-center" style={{ borderTop: '1px solid rgba(35,51,74,0.08)', backgroundColor: '#F8F5F0' }}>
-        <p className="text-xs" style={{ color: '#23334A', opacity: 0.35 }}>© {new Date().getFullYear()} EdGenAI. All rights reserved.</p>
-      </footer>
+      <Footer />
 
     </div>
   );

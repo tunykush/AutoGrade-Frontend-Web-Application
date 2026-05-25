@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { NeatGradient } from '@firecms/neat'
 import Navbar from '@/components/ui/Navbar'
+import Footer from '@/components/ui/Footer';
 
 const contactCards = [
   {
@@ -291,31 +292,7 @@ export default function ContactPage() {
       </section>
 
       {/* ── FOOTER ───────────────────────────────────────── */}
-      <footer className="py-12 md:py-16" style={{ backgroundColor: '#23334A' }}>
-        <div className="max-w-[1200px] mx-auto px-6 md:px-10 grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-10 items-start">
-          <div>
-            <p className="text-2xl md:text-3xl font-semibold leading-snug" style={{ color: '#C7D9E5' }}>
-              Step into the future<br />of learning with us.
-            </p>
-          </div>
-          <nav className="flex flex-col gap-3">
-            {['Home', 'AutoGrade', 'Consultancy', 'About Us'].map((link) => (
-              <a key={link} href="#" className="text-sm transition hover:opacity-100" style={{ color: '#C7D9E5', opacity: 0.7 }}>{link}</a>
-            ))}
-          </nav>
-        </div>
-        <div
-          className="max-w-[1200px] mx-auto px-6 md:px-10 mt-10 pt-6 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center"
-          style={{ borderTop: '1px solid rgba(199,217,229,0.15)' }}
-        >
-          <div className="flex gap-4 flex-wrap">
-            {['Website Privacy', 'Acceptable Use Policy', 'Terms of Use', 'Cookies Settings'].map((item) => (
-              <a key={item} href="#" className="text-xs transition hover:opacity-100" style={{ color: '#C7D9E5', opacity: 0.5 }}>{item}</a>
-            ))}
-          </div>
-          <p className="text-xs" style={{ color: '#C7D9E5', opacity: 0.4 }}>© {new Date().getFullYear()} EdGenAI Technologies, Inc. All rights reserved.</p>
-        </div>
-      </footer>
+      <Footer />
 
     </div>
   )
