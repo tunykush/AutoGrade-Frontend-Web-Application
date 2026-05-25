@@ -1,0 +1,427 @@
+'use client';
+
+import * as React from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { ArrowLeft, Loader2, Lock, FileText, Trash2, LockOpen, BookOpen, X } from 'lucide-react';
+import { QuestionResult, GradingData, Override, Evaluation, EvidenceItem } from '@/components/papers/types';
+import { StatusBadge } from '@/components/papers/StatusBadge';
+import Navbar from '@/components/ui/Navbar';
+
+export default function ReviewPage() {
+  const params = useParams();
+  const router = useRouter();
+  const paperId = Number(params.id);
+  const submissionId = Number(params.submissionId);
+
+  const [paperName, setPaperName] = React.useState(`Paper #${paperId}`);
+  React.useEffect(() => {
+    const stored = JSON.parse(localStorage.getItem('paperFileNames') ?? '{}');
+    if (stored[paperId]) setPaperName(stored[paperId]);
+  }, [paperId]);
+
+  // ── Grading data ──────────────────────────────────────────────────────────
+  const [gradingData, setGradingData] = React.useState<GradingData | null>(null);
+  const [loadingReview, setLoadingReview] = React.useState(true);
+  const [submissionStatus, setSubmissionStatus] = React.useState('SUCCESS');
+  const [isFinalized, setIsFinalized] = React.useState(false);
+  const [fetchError, setFetchError] = React.useState<string | null>(null);
+
+  const loadGradingData = React.useCallback(async () => {
+    setLoadingReview(true);
+    setFetchError(null);
+    try {
+      const res = await fetch(`/api/ag/grading-json?submission_id=${submissionId}`, { cache: 'no-store' });
+      const raw = await res.json().catch(() => null);
+      if (!res.ok || !raw) {
+        setFetchError(`Failed to load grading data (${res.status})`);
+        return;
+      }
+      const rawQR = raw.question_results ?? raw.data?.question_results ?? raw.results ?? raw.questions;
+      const questionsArray: QuestionResult[] = rawQR
+        ? (Array.isArray(rawQR) ? rawQR : Object.values(rawQR))
+        : [];
+      const totalMax = questionsArray.reduce((a, q) => a + (q.max_marks ?? 0), 0);
+      setGradingData({
+        question_results: questionsArray,
+        totals: raw.totals ?? (raw.total_score != null ? { total_score: raw.total_score } : undefined),
+        total_max: totalMax,
+      });
+      if (raw.validation_status) setSubmissionStatus(raw.validation_status);
+      if (raw.is_finalized) setIsFinalized(true);
+
+      const init: Record<string, Override> = {};
+      questionsArray.forEach((q) => {
+        init[q.canonical_question_id] = { score: String(q.final_score), reason: '' };
+      });
+      setOverrides(init);
+    } catch (err) {
+      setFetchError(err instanceof Error ? err.message : 'Failed to load');
+    } finally {
+      setLoadingReview(false);
+    }
+  }, [submissionId]);
+
+  React.useEffect(() => { loadGradingData(); }, [loadGradingData]);
+
+  // ── Overrides ─────────────────────────────────────────────────────────────
+  const [overrides, setOverrides] = React.useState<Record<string, Override>>({});
+  const [saving, setSaving] = React.useState(false);
+  const [saveMsg, setSaveMsg] = React.useState<{ ok: boolean; text: string } | null>(null);
+
+  const handleOverrideChange = (qid: string, field: 'score' | 'reason', val: string) => {
+    setOverrides((prev) => ({ ...prev, [qid]: { ...prev[qid], [field]: val } }));
+  };
+
+  const saveOverrides = async () => {
+    setSaving(true);
+    setSaveMsg(null);
+    const changed = Object.entries(overrides)
+      .filter(([qid, { score, reason }]) => {
+        const orig = gradingData?.question_results?.find((q) => q.canonical_question_id === qid);
+        return reason.trim() !== '' && orig !== undefined && Number(score) !== orig.final_score;
+      })
+      .map(([qid, { score, reason }]) => ({
+        canonical_question_id: qid,
+        override_score: Number(score),
+        reason,
+      }));
+
+    if (changed.length === 0) {
+      setSaveMsg({ ok: false, text: 'No changes to save. Add a reason for each changed score.' });
+      setSaving(false);
+      return;
+    }
+    try {
+      const res = await fetch('/api/ag/apply-review', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paper_id: paperId, submission_id: submissionId, overrides: changed }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || data?.message || 'Save failed');
+      setSaveMsg({ ok: true, text: `Saved ${changed.length} override(s). Refreshing…` });
+      await loadGradingData();
+    } catch (err) {
+      setSaveMsg({ ok: false, text: err instanceof Error ? err.message : 'Save failed' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ── Finalize ──────────────────────────────────────────────────────────────
+  const [finalizing, setFinalizing] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+  const [deleteConfirm, setDeleteConfirm] = React.useState(false);
+  const [feedbackModal, setFeedbackModal] = React.useState<string | null>(null);
+
+  const deleteSubmission = async () => {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/ag/delete-submission?submission_id=${submissionId}`, { method: 'DELETE' });
+      if (res.ok) router.push(`/papers/${paperId}/grade`);
+    } catch { /* ignore */ }
+    finally { setDeleting(false); setDeleteConfirm(false); }
+  };
+
+  // Un-finalize: resets local state so the user can make further edits.
+  // The backend has no unfinalize endpoint — this allows editing overrides
+  // which can then be re-submitted via Save Changes + Finalize.
+  const unfinalizeSubmission = () => {
+    setIsFinalized(false);
+    setSubmissionStatus('SUCCESS');
+  };
+
+  const finalizeSubmission = async () => {
+    setFinalizing(true);
+    try {
+      const res = await fetch('/api/ag/finalize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ submission_id: submissionId }),
+      });
+      if (!res.ok) return;
+      setSubmissionStatus('FINALIZED');
+      setIsFinalized(true);
+    } catch { /* ignore */ }
+    finally { setFinalizing(false); }
+  };
+
+  const questions = gradingData?.question_results ?? [];
+  const hasOverrides = Object.keys(overrides).length > 0;
+  const totalScore = hasOverrides
+    ? questions.reduce((a, q) => a + Number(overrides[q.canonical_question_id]?.score ?? q.final_score), 0)
+    : (gradingData?.totals?.total_score ?? 0);
+  const totalMax = gradingData?.total_max ?? questions.reduce((a, q) => a + (q.max_marks ?? 0), 0);
+
+  return (
+    <main className="min-h-screen bg-[#f6f7f9] text-slate-900">
+        <Navbar variant="light"/>
+        <div className="px-6 py-8 md:px-10 space-y-6">
+
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 text-sm">
+          <button
+            onClick={() => router.push('/papers')}
+            className="flex items-center gap-1 text-slate-500 hover:text-slate-900 transition-colors"
+          >
+            Papers
+          </button>
+          <span className="text-slate-300">/</span>
+          <button
+            onClick={() => router.push(`/papers/${paperId}/grade`)}
+            className="flex items-center gap-1 text-slate-500 hover:text-slate-900 transition-colors"
+          >
+            {paperName}
+          </button>
+          <span className="text-slate-300">/</span>
+          <span className="font-semibold text-slate-900">Submission #{submissionId}</span>
+        </div>
+
+        {/* Back + Header */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.push(`/papers/${paperId}/grade`)}
+            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-900"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div className="flex-1">
+            <h1 className="text-xl font-bold text-slate-900">Review Grading</h1>
+            <p className="text-sm text-slate-500">Submission #{submissionId}</p>
+          </div>
+          <StatusBadge status={submissionStatus} />
+        </div>
+
+        {/* Score summary */}
+        {!loadingReview && questions.length > 0 && (
+          <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-6 py-5">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Total Score</p>
+              <p className="text-3xl font-bold tabular-nums text-slate-900">
+                {totalScore} <span className="text-lg text-slate-400">/ {totalMax}</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {/* Delete button + confirm */}
+              {deleteConfirm ? (
+                <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2">
+                  <p className="text-sm text-rose-700">Delete this submission?</p>
+                  <button type="button" disabled={deleting} onClick={deleteSubmission}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-700 disabled:opacity-60">
+                    {deleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                    Confirm
+                  </button>
+                  <button type="button" onClick={() => setDeleteConfirm(false)}
+                    className="rounded-lg px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-100">
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button type="button" onClick={() => setDeleteConfirm(true)}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 px-3 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-50">
+                  <Trash2 className="h-4 w-4" /> Delete
+                </button>
+              )}
+              {/* Finalize / Un-finalize */}
+              {isFinalized ? (
+                <button type="button" onClick={unfinalizeSubmission}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                  <LockOpen className="h-4 w-4" /> Un-finalize
+                </button>
+              ) : (
+                <button type="button" disabled={finalizing} onClick={finalizeSubmission}
+                  className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition disabled:opacity-60"
+                  style={{ backgroundColor: '#23334a' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#1c2a3a'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#23334a'; }}
+                >
+                  {finalizing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+                  Finalize
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Content */}
+        {loadingReview ? (
+          <div className="flex flex-col items-center py-16 text-slate-400">
+            <Loader2 className="mb-3 h-6 w-6 animate-spin" />
+            <p className="text-sm">Loading grading details…</p>
+          </div>
+        ) : fetchError ? (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-6 text-center">
+            <p className="font-medium text-rose-700">{fetchError}</p>
+            <button onClick={loadGradingData} className="mt-2 text-sm text-rose-600 underline">Retry</button>
+          </div>
+        ) : questions.length === 0 ? (
+          <div className="flex flex-col items-center rounded-2xl border border-slate-200 bg-white py-14 text-slate-400">
+            <FileText className="mb-3 h-10 w-10 text-slate-200" />
+            <p className="font-medium text-slate-500">No grading data available</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            {questions.map((q) => {
+              const ov = overrides[q.canonical_question_id];
+              const scoreChanged = ov && Number(ov.score) !== q.final_score;
+              const evaluations = q.evaluations ?? [];
+              const evidence = q.evidence_catalog ?? [];
+              return (
+                <div
+                  key={q.canonical_question_id}
+                  className={`rounded-2xl border bg-white px-5 py-4 transition-colors ${
+                    scoreChanged ? 'border-amber-300 bg-amber-50/30' : 'border-slate-200'
+                  }`}
+                >
+                  <div className="mb-3 flex items-start justify-between gap-4">
+                    <p className="font-semibold text-slate-900">
+                      {q.display_label ?? `Question ${q.canonical_question_id}`}
+                    </p>
+                    <span className="shrink-0 text-sm text-slate-500">
+                      AI: <span className="font-semibold text-slate-800 tabular-nums">{q.final_score}/{q.max_marks}</span>
+                    </span>
+                  </div>
+
+                  {/* Feedback button — opens modal */}
+                  {evaluations.length > 0 && (
+                    <button type="button" onClick={() => setFeedbackModal(q.canonical_question_id)}
+                      className="mb-3 flex items-center gap-1.5 rounded-lg bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 transition w-full">
+                      <BookOpen className="h-3.5 w-3.5 text-slate-400" /> View AI Feedback
+                    </button>
+                  )}
+
+                  {!isFinalized ? (
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                      <div className="sm:w-36">
+                        <label className="mb-1 block text-xs font-medium text-slate-600">Override score</label>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="number"
+                            min={0}
+                            max={q.max_marks}
+                            step={0.5}
+                            value={ov?.score ?? q.final_score}
+                            onChange={(e) => handleOverrideChange(q.canonical_question_id, 'score', e.target.value)}
+                            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm tabular-nums outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+                          />
+                          <span className="shrink-0 text-xs text-slate-400">/ {q.max_marks}</span>
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <label className="mb-1 block text-xs font-medium text-slate-600">
+                          Reason {scoreChanged && <span className="text-amber-600">(required to save)</span>}
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. partial credit for correct method"
+                          value={ov?.reason ?? ''}
+                          onChange={(e) => handleOverrideChange(q.canonical_question_id, 'reason', e.target.value)}
+                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-600">
+                      Final score: <span className="font-semibold tabular-nums text-slate-900">{q.final_score} / {q.max_marks}</span>
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Save */}
+            {!isFinalized && (
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={saveOverrides}
+                  className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60"
+                >
+                  {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Save Changes
+                </button>
+                {saveMsg && (
+                  <p className={`text-sm ${saveMsg.ok ? 'text-emerald-600' : 'text-rose-600'}`}>{saveMsg.text}</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* AI Feedback Modal */}
+      {feedbackModal && (() => {
+        const q = questions.find(q => q.canonical_question_id === feedbackModal);
+        if (!q) return null;
+        const evals = q.evaluations ?? [];
+        const evidence = q.evidence_catalog ?? [];
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setFeedbackModal(null)} />
+            {/* Panel */}
+            <div className="relative z-10 flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+                <div>
+                  <p className="font-semibold text-slate-900">
+                    {q.display_label ?? `Question ${q.canonical_question_id}`} — AI Feedback
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Score: <span className="font-semibold text-slate-700">{q.final_score} / {q.max_marks}</span>
+                  </p>
+                </div>
+                <button type="button" onClick={() => setFeedbackModal(null)}
+                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              {/* Scrollable body */}
+              <div className="overflow-y-auto px-5 py-4 space-y-4">
+                {/* Evaluations */}
+                {evals.map((ev, ei) => (
+                  <div key={ei} className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                        {ev.llm ?? ev.model ?? `Evaluator ${ei + 1}`}
+                      </span>
+                      {ev.score != null && (
+                        <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                          {ev.score} pts
+                        </span>
+                      )}
+                    </div>
+                    {ev.rationale && (
+                      <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{ev.rationale}</p>
+                    )}
+                  </div>
+                ))}
+                {/* Evidence */}
+                {evidence.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Evidence Used</p>
+                    {evidence.map((ev, ei) => (
+                      <div key={ei} className="rounded-xl border border-violet-100 bg-violet-50 px-4 py-3 space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[10px] font-semibold text-violet-600">{ev.label ?? ev.id ?? `E${ei + 1}`}</span>
+                          {ev.score != null && (
+                            <span className="text-[10px] text-violet-500">relevance: {ev.score}</span>
+                          )}
+                        </div>
+                        {ev.text && <p className="text-sm text-violet-900 leading-relaxed">{ev.text}</p>}
+                        {ev.source && (
+                          <p className="text-[10px] text-violet-400">{ev.source}{ev.page != null ? ` · page ${ev.page}` : ''}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+    </main>
+  );
+}
